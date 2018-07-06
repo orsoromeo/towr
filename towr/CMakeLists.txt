@@ -90,6 +90,17 @@ target_link_libraries(${PROJECT_NAME}-example
 )
 add_test(${PROJECT_NAME}-example ${PROJECT_NAME}-example)
 
+# Single hop example problem solved with IPOPT
+add_executable(${PROJECT_NAME}-single-hop-example 
+  test/single_hop_example.cc
+)
+target_link_libraries(${PROJECT_NAME}-single-hop-example  
+  PRIVATE
+    ${PROJECT_NAME} 
+    ifopt::ifopt_ipopt
+)
+add_test(${PROJECT_NAME}-single-hop-example ${PROJECT_NAME}-single-hop-example)
+
 # unit tests of costs/constraints
 find_package(GTest QUIET)
 if (TARGET GTest::GTest) # only build when modern targets exists
