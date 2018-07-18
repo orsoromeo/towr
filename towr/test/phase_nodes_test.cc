@@ -3,7 +3,7 @@
  *
  * Author: Romeo Orsolino
  *
- * email: rorsolino@ihmc.us
+ * email: romeo.orsolino@iit.it
  *
  */
 #include <iostream>
@@ -13,24 +13,15 @@
 
 #include <towr/variables/variable_names.h>
 #include <towr/variables/base_nodes.h>
-#include <towr/variables/phase_durations.h>
 
-#include <towr/constraints/base_motion_constraint.h>
-#include <towr/constraints/dynamic_constraint.h>
-#include <towr/constraints/force_constraint.h>
-#include <towr/constraints/range_of_motion_constraint.h>
-#include <towr/constraints/swing_constraint.h>
-#include <towr/constraints/terrain_constraint.h>
-#include <towr/constraints/total_duration_constraint.h>
-#include <towr/constraints/spline_acc_constraint.h>
-
-//#include <towr/models/examples/monoped_model.h>
 #include <towr/models/centroidal_model.h>
 
-#include <towr/costs/node_cost.h>
 
 namespace towr {
 
+
+/* The four following tests verify that the values of motion phase nodes and force phase nodes
+* are actually splined from the inital desired value to the final desired value using the InitializeNodesTowardsGoal method */
 TEST(PhaseNodesTest, motionPhaseNodesStartInSwing){
 
 	NlpFactory nlp;
@@ -183,7 +174,8 @@ TEST(PhaseNodesTest, forcePhaseNodesStartInSwing){
     EXPECT_EQ(initial_ee_pos_W(2), initialized_force_values(2));
 
 }
-// The kinematic limits of a one-legged hopper
+
+// The kinematic limits of a one-legged hopper 
 class MonopedKinematicModel : public KinematicModel {
 public:
   MonopedKinematicModel () : KinematicModel(1)
@@ -203,6 +195,7 @@ public:
                     1) {}                            // number of endeffectors
 };
 
+/* the following test is tests the construction of a spline holder (without using TOWR) */
 TEST(PhaseNodesTest, splineHolderTest){
 
 
@@ -213,12 +206,13 @@ TEST(PhaseNodesTest, splineHolderTest){
 	// Parameters that define the motion. See c'tor for default values or
 	// other values that can be modified.
 	Parameters params;
-	params.t_total_ = 1.6; // [s] time to reach goal state
+	double t_total = 1.6; // [s] time to reach goal state
 	// here we define the initial phase durations, that can however be changed
 	// by the optimizer. The number of swing and stance phases however is fixed.
 	// alternating stance and swing:     ____-----_____-----_____-----_____
 	params.ee_phase_durations_.push_back({0.4, 0.2, 0.4});
-	params.min_phase_duration_ = 0.1;
+	double min_phase_duration = 0.1;
+	double max_phase_duration = 1.0;
 	params.ee_in_contact_at_start_.push_back(true);
 
 	NlpFactory nlp;
@@ -242,7 +236,7 @@ TEST(PhaseNodesTest, splineHolderTest){
 	/* Create base linear nodes */
 	std::vector<Nodes::Ptr> baseLinNodesList;
 	auto baseLinNodes = std::make_shared<BaseNodes>(nodes_number, id::base_lin_nodes);
-	baseLinNodes->InitializeNodesTowardsGoal(nlp.initial_base_.lin.p(), nlp.final_base_.lin.p(), params.t_total_);
+	baseLinNodes->InitializeNodesTowardsGoal(nlp.initial_base_.lin.p(), nlp.final_base_.lin.p(), t_total);
 	baseLinNodes->AddStartBound(kPos, {X,Y,Z}, nlp.initial_base_.lin.p());
 	baseLinNodes->AddStartBound(kVel, {X,Y,Z}, nlp.initial_base_.lin.v());
 	baseLinNodes->AddFinalBound(kPos, {X,Y},   nlp.final_base_.lin.p());
@@ -253,7 +247,7 @@ TEST(PhaseNodesTest, splineHolderTest){
 	/* Create base angular nodes */
 	std::vector<Nodes::Ptr> baseAngNodesList;
 	auto baseAngNodes = std::make_shared<BaseNodes>(nodes_number, id::base_ang_nodes);
-	baseAngNodes->InitializeNodesTowardsGoal(nlp.initial_base_.ang.p(), nlp.final_base_.ang.p(), params.t_total_);
+	baseAngNodes->InitializeNodesTowardsGoal(nlp.initial_base_.ang.p(), nlp.final_base_.ang.p(), t_total);
 	baseAngNodes->AddStartBound(kPos, {X,Y,Z}, nlp.initial_base_.ang.p());
 	baseAngNodes->AddStartBound(kVel, {X,Y,Z}, nlp.initial_base_.ang.v());
 	baseAngNodes->AddFinalBound(kPos, {X,Y},   nlp.final_base_.ang.p());
@@ -269,7 +263,7 @@ TEST(PhaseNodesTest, splineHolderTest){
     double m = model.dynamic_model_->m();
     double g = model.dynamic_model_->g();
     Eigen::Vector3d f_stance(0.0, 0.0, m*g);
-    forceNodes->InitializeNodesTowardsGoal(f_stance, f_stance, params.t_total_);
+    forceNodes->InitializeNodesTowardsGoal(f_stance, f_stance, t_total);
     forceNodesList.push_back(forceNodes);
 	variables.insert(variables.end(), forceNodesList.begin(), forceNodesList.end());
 
@@ -280,7 +274,7 @@ TEST(PhaseNodesTest, splineHolderTest){
 	/* initialize the starting and target points of the trajectory */
     Eigen::Vector3d initial_ee_pos_W = Eigen::Vector3d(1.0, 0.0, 0.42);
     Eigen::Vector3d final_ee_pos_W = Eigen::Vector3d(3.0, 0.0, 0.42);
-    motionNodes->InitializeNodesTowardsGoal(initial_ee_pos_W, final_ee_pos_W, params.t_total_);
+    motionNodes->InitializeNodesTowardsGoal(initial_ee_pos_W, final_ee_pos_W, t_total);
     motionNodes->AddStartBound(kPos, {X,Y,Z}, initial_ee_pos_W);
 	motionNodesList.push_back(motionNodes);
 	variables.insert(variables.end(), motionNodesList.begin(), motionNodesList.end());
@@ -289,8 +283,8 @@ TEST(PhaseNodesTest, splineHolderTest){
 	std::vector<PhaseDurations::Ptr> phaseDurationsList;
 	auto phaseDurations = std::make_shared<PhaseDurations>(ee, params.ee_phase_durations_.at(ee),
 	                                                params.ee_in_contact_at_start_.at(ee),
-	                                                params.min_phase_duration_,
-	                                                params.max_phase_duration_);
+	                                                min_phase_duration,
+	                                                max_phase_duration);
 	phaseDurationsList.push_back(phaseDurations);
 	variables.insert(variables.end(), phaseDurationsList.begin(), phaseDurationsList.end());
 
@@ -302,7 +296,7 @@ TEST(PhaseNodesTest, splineHolderTest){
     std::cout<<"Initialize the Spline Holder "<<std::endl;
     spline_holder = SplineHolder(baseLinNodes, // linear
     									baseAngNodes, // angular
-										params.GetBasePolyDurations(),
+										params.ee_phase_durations_.at(ee),
 										motionNodesList,
 										forceNodesList,
 										phaseDurationsList,
