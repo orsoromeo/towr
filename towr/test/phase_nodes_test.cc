@@ -24,14 +24,14 @@
 #include <towr/constraints/total_duration_constraint.h>
 #include <towr/constraints/spline_acc_constraint.h>
 
-#include <towr/models/examples/monoped_model.h>
+//#include <towr/models/examples/monoped_model.h>
 #include <towr/models/centroidal_model.h>
 
 #include <towr/costs/node_cost.h>
 
 namespace towr {
 
-TEST(PhaseNodesTest, motionPhaseNodesInitializationTowardsGoal){
+TEST(PhaseNodesTest, motionPhaseNodesStartInSwing){
 
 	NlpFactory nlp;
 	std::vector<PhaseNodes::Ptr> vars;
@@ -69,7 +69,45 @@ TEST(PhaseNodesTest, motionPhaseNodesInitializationTowardsGoal){
 
 }
 
-TEST(PhaseNodesTest, forcePhaseNodesInitializationTowardsGoal){
+TEST(PhaseNodesTest, motionPhaseNodesStartInStance){
+
+	NlpFactory nlp;
+	std::vector<PhaseNodes::Ptr> vars;
+
+	double T = 1.5;
+	int ee = 0;
+	int phase_count = 2;
+	int nodes_number = phase_count+1;
+	int number_of_variables = nodes_number*6;
+	/*
+	 * TODO: Understand why the motion phase nodes passes this test only if the sequence starts in swing phase.
+	 * Therefore the following test should be false for the test to pass.
+	 */
+	bool in_contact_start = true;
+	const std::string var_name  ="vars";
+	int n_polys_in_changing_phase = 2;
+
+	auto motionNodes = std::make_shared<PhaseNodes>(phase_count, in_contact_start, var_name,
+													n_polys_in_changing_phase, PhaseNodes::Motion);
+	Eigen::VectorXd motion_values = motionNodes->GetValues();
+	std::cout<<"default motion nodes values: "<<motion_values.transpose()<<std::endl;
+
+	for (int idx = 0; idx<number_of_variables; idx++)
+		EXPECT_EQ(0.0, motion_values(idx));
+
+    Eigen::Vector3d initial_ee_pos_W = Eigen::Vector3d(1.0, 0.0, 0.42);
+    Eigen::Vector3d final_ee_pos_W = Eigen::Vector3d(3.0, 0.0, 0.42);
+
+    motionNodes->InitializeNodesTowardsGoal(initial_ee_pos_W, final_ee_pos_W, T);
+    Eigen::VectorXd initialized_motion_values = motionNodes->GetValues();
+    std::cout<<"initialized motion nodes values: "<<initialized_motion_values.transpose()<<std::endl;
+    EXPECT_EQ(initial_ee_pos_W(0), initialized_motion_values(0));
+    EXPECT_EQ(initial_ee_pos_W(1), initialized_motion_values(1));
+    EXPECT_EQ(initial_ee_pos_W(2), initialized_motion_values(2));
+
+}
+
+TEST(PhaseNodesTest, forcePhaseNodesStartInStance){
 
 	NlpFactory nlp;
 	std::vector<PhaseNodes::Ptr> vars;
@@ -107,7 +145,66 @@ TEST(PhaseNodesTest, forcePhaseNodesInitializationTowardsGoal){
 
 }
 
-TEST(PhaseNodesTest, phaseNodesInitializationTowardsGoal){
+
+TEST(PhaseNodesTest, forcePhaseNodesStartInSwing){
+
+	NlpFactory nlp;
+	std::vector<PhaseNodes::Ptr> vars;
+
+	double T = 1.5;
+	int ee = 0;
+	int phase_count = 2;
+	int nodes_number = phase_count+1;
+	int number_of_variables = nodes_number*6;
+	/*
+	 * TODO: Understand why the force phase nodes passes this test only if the sequence starts in stance phase.
+	 * Therefore the following test should be true for the test to pass.
+	 */
+	bool in_contact_start = false;
+	const std::string var_name  ="vars";
+	int n_polys_in_changing_phase = 2;
+
+	auto forceNodes = std::make_shared<PhaseNodes>(phase_count, in_contact_start, var_name,
+													n_polys_in_changing_phase, PhaseNodes::Force);
+	Eigen::VectorXd force_values = forceNodes->GetValues();
+	std::cout<<"default motion nodes values: "<<force_values.transpose()<<std::endl;
+
+	for (int idx = 0; idx<number_of_variables; idx++)
+		EXPECT_EQ(0.0, force_values(idx));
+
+    Eigen::Vector3d initial_ee_pos_W = Eigen::Vector3d(1.0, 0.0, 0.42);
+    Eigen::Vector3d final_ee_pos_W = Eigen::Vector3d(3.0, 0.0, 0.42);
+
+    forceNodes->InitializeNodesTowardsGoal(initial_ee_pos_W, final_ee_pos_W, T);
+    Eigen::VectorXd initialized_force_values = forceNodes->GetValues();
+    std::cout<<"initialized force nodes values: "<<initialized_force_values.transpose()<<std::endl;
+    EXPECT_EQ(initial_ee_pos_W(0), initialized_force_values(0));
+    EXPECT_EQ(initial_ee_pos_W(1), initialized_force_values(1));
+    EXPECT_EQ(initial_ee_pos_W(2), initialized_force_values(2));
+
+}
+// The kinematic limits of a one-legged hopper
+class MonopedKinematicModel : public KinematicModel {
+public:
+  MonopedKinematicModel () : KinematicModel(1)
+  {
+    nominal_stance_.at(0) = Eigen::Vector3d( 0.0, 0.0, -0.58);
+    max_dev_from_nominal_ << 0.25, 0.15, 0.2;
+  }
+};
+
+
+// The Centroidal dynamics of a one-legged hopper
+class MonopedDynamicModel : public CentroidalModel {
+public:
+  MonopedDynamicModel()
+  : CentroidalModel(20,                              // mass of the robot
+                    1.2, 5.5, 6.0, 0.0, -0.2, -0.01, // base inertia
+                    1) {}                            // number of endeffectors
+};
+
+TEST(PhaseNodesTest, splineHolderTest){
+
 
 	// Kinematic limits and dynamic parameters
 	RobotModel model;
@@ -197,33 +294,15 @@ TEST(PhaseNodesTest, phaseNodesInitializationTowardsGoal){
 	phaseDurationsList.push_back(phaseDurations);
 	variables.insert(variables.end(), phaseDurationsList.begin(), phaseDurationsList.end());
 
-    Eigen::VectorXd initialized_force_values = forceNodes->GetValues();
-    std::cout<<"initialized force nodes values: "<<initialized_force_values.transpose()<<std::endl;
+    //Eigen::VectorXd initialized_force_values = forceNodes->GetValues();
+    //std::cout<<"initialized force nodes values: "<<initialized_force_values.transpose()<<std::endl;
 
-	// set the initial position
-	BaseState initial_base;
-	initial_base.lin.at(kPos) << 1.0, 0.0, 1.0;
-	// define the desired goal state
-	BaseState goal;
-	goal.lin.at(towr::kPos) << 3.0, 0.0, 1.0;
-
-	Eigen::Vector3d initial_foot_pos_W = Eigen::Vector3d::Zero();
-
-
+	/* Spline holder definition  */
     SplineHolder spline_holder;
-
-    //Nodes::Ptr base_lin_nodes = baseLinNodesList.at(ee);
-    //Nodes::Ptr base_ang_nodes = baseAngNodesList.at(ee);
-    const std::vector<double> base_poly_durations = params.GetBasePolyDurations();
-    //std::vector<PhaseNodes::Ptr> ee_motion_nodes = motionNodesList;
-    //std::vector<PhaseNodes::Ptr> ee_force_nodes = forceNodesList;
-    //std::vector<PhaseDurations::Ptr> phase_durations = phaseDurationsList;
-
-    std::cout<<"Define the Spline Holder "<<std::endl;
-
+    std::cout<<"Initialize the Spline Holder "<<std::endl;
     spline_holder = SplineHolder(baseLinNodes, // linear
     									baseAngNodes, // angular
-										base_poly_durations,
+										params.GetBasePolyDurations(),
 										motionNodesList,
 										forceNodesList,
 										phaseDurationsList,
