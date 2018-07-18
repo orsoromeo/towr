@@ -94,6 +94,8 @@ if (TARGET GTest::GTest) # only build when modern targets exists
   add_executable(${PROJECT_NAME}-test
     test/dynamic_constraint_test.cc
     test/centroidal_dynamics_test.cc
+    test/single_hop_example_test.cc
+    test/nodes_test.cc
   )
   target_link_libraries(${PROJECT_NAME}-test
     PRIVATE
