@@ -1,76 +1,141 @@
-/******************************************************************************
-Copyright (c) 2018, Alexander W. Winkler. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-
-* Neither the name of the copyright holder nor the names of its
-  contributors may be used to endorse or promote products derived from
-  this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-******************************************************************************/
-
+/**
+ * 17/11/2018
+ *
+ * Author: Romeo Orsolino
+ *
+ * email: rorsolino@ihmc.us
+ *
+ */
+#include <iostream>
 #include <gtest/gtest.h>
-#include <Eigen/Sparse>
+
+#include <towr/towr.h>
+#include <towr/nlp_factory.h>
+
+#include <towr/variables/variable_names.h>
+#include <towr/variables/base_nodes.h>
+#include <towr/variables/phase_durations.h>
+
+#include <towr/constraints/base_motion_constraint.h>
+#include <towr/constraints/dynamic_constraint.h>
+#include <towr/constraints/force_constraint.h>
+#include <towr/constraints/range_of_motion_constraint.h>
+#include <towr/constraints/swing_constraint.h>
+#include <towr/constraints/terrain_constraint.h>
+#include <towr/constraints/total_duration_constraint.h>
+#include <towr/constraints/spline_acc_constraint.h>
+
+#include <towr/terrain/examples/height_map_examples.h>
+
+#include <towr/models/examples/monoped_model.h>
+#include <towr/models/centroidal_model.h>
+
+#include <towr/costs/node_cost.h>
+
+#include <ifopt/ipopt.h>
 
 namespace towr {
 
-using VectorXd = Eigen::VectorXd;
+TEST(DynamicConstraintTest, testDynamicConstraintValues){
+
+	ifopt::Problem nlp;
+	NlpFactory factory;
+
+	// Kinematic limits and dynamic parameters
+	RobotModel model;
+	model.dynamic_model_   = std::make_shared<MonopedDynamicModel>();
+	model.kinematic_model_ = std::make_shared<MonopedKinematicModel>();
 
 
-//TEST(DynamicConstraintTest, UpdateConstraintValues)
-//{
-//  using Jacobian      = Eigen::SparseMatrix<double, Eigen::RowMajor>;
-//
-//  Jacobian jac(3,2);
-//
-////  jac.coeffRef(0,0) = 1.1;
-////  jac.coeffRef(0,1) = 2.2;
-//  jac.coeffRef(1,1) = 3.3;
-//
-//
-//  using JacobianRow = Eigen::SparseVector<double, Eigen::RowMajor>;
-//  JacobianRow row(2);
-//  row.insert(1) = 5;
-//  jac.row(0) += row;
-//
-//
-////  jac.setZero();
-//
-//
-//  std::cout << "jac: " << jac << std::endl;
-//  double nnz = jac.nonZeros();
-//  std::cout << "nnz: " << nnz << std::endl;
-//
-//
-//  jac.makeCompressed();
-//  for (int i=0; i<nnz; ++i) {
-//    std::cout << "i=" << i << ":  " << jac.valuePtr()[i] << std::endl;
-//  }
-//}
+	// set the initial position
+	BaseState initial_base;
+	initial_base.lin.at(kPos).z() = 0.5;
 
-TEST(DynamicConstraintTest, EigenScalar)
-{
-  VectorXd g(2);
+	Eigen::Vector3d initial_foot_pos_W = Eigen::Vector3d::Zero();
 
-//  std::cout << g << std::endl;
+	// define the desired goal state
+	BaseState goal;
+	goal.lin.at(towr::kPos) << 1.0, 0.0, 0.5;
+
+
+	// Parameters that define the motion. See c'tor for default values or
+	// other values that can be modified.
+	Parameters params;
+	params.t_total_ = 1.6; // [s] time to reach goal state
+	// here we define the initial phase durations, that can however be changed
+	// by the optimizer. The number of swing and stance phases however is fixed.
+	// alternating stance and swing:     ____-----_____-----_____-----_____
+	params.ee_phase_durations_.push_back({0.4, 0.2, 0.4});
+	params.ee_in_contact_at_start_.push_back(true);
+	DynamicModel::Ptr monopedDynamicModel = std::make_shared<MonopedDynamicModel>();
+
+    //for (auto v : factory.GetVariableSets()){
+    //	Eigen::VectorXd variablesValues = v->GetValues();
+    //	std::cout<<"Variables values: "<<variablesValues.transpose()<<std::endl;
+    //}
+
+	std::cout<<"I am here! "<<std::endl;
+
+	factory.initial_base_ = initial_base;
+	factory.initial_ee_W_ = {initial_foot_pos_W};
+	factory.final_base_ = goal;
+	factory.params_ = params;
+	factory.model_ = model;
+	factory.terrain_ = std::make_shared<FlatGround>();
+
+    for (auto v : factory.GetVariableSets()){
+    	std::cout<<"Variables name: "<<v->GetName()<<std::endl;
+    	Eigen::VectorXd variablesValues = v->GetValues();
+    	std::cout<<"Variables values: "<<variablesValues.transpose()<<std::endl;
+    }
+
+    auto dynamicConstraint = std::make_shared<DynamicConstraint>(monopedDynamicModel,
+                                                          params,
+														  factory.spline_holder_);
+    std::cout<<"add dynamic constraint"<<std::endl;
+    nlp.AddConstraintSet(dynamicConstraint);
+
+    //Eigen::VectorXd constraintValues = dynamicConstraint->GetValues();
+    //for (auto c : factory.GetConstraints()){
+    	//nlp.AddConstraintSet(c);
+    	//Eigen::VectorXd constraintValues = c->GetValues();
+    //}
+
+    //for (auto c : factory.GetCosts())
+    	//nlp.AddCostSet(c);
+
+    //nlp_problem.AddConstraintSet(dynamicConstraint);
+    //Eigen::VectorXd constraintValues = dynamicConstraint->GetValues();
+    //std::cout<<"Dynamic constraint values: "<<constraintValues.transpose()<<std::endl;
 }
 
-} /* namespace towr */
+TEST(DynamicConstraintTest, testConstraintSetVariables){
+
+	NlpFactory nlp_factory;
+	ifopt::Problem nlp_problem;
+	NlpFactory::VariablePtrVec vars = nlp_factory.GetVariableSets();
+
+	double T = 1.5;
+	int ee = 0;
+	int phase_count = 2;
+	int nodes_number = phase_count+1;
+	int number_of_variables = nodes_number*6;
+
+    DynamicModel::Ptr monopedDynamicModel = std::make_shared<MonopedDynamicModel>();
+    Parameters params;
+    std::cout<<"created dynamic model"<<std::endl;
+
+    auto dynamicConstraint = std::make_shared<DynamicConstraint>(monopedDynamicModel,
+                                                          params,
+														  nlp_factory.spline_holder_);
+    for (auto v : nlp_factory.GetVariableSets()){
+    	Eigen::VectorXd variablesValues = v->GetValues();
+    	std::cout<<"Variables values: "<<variablesValues.transpose()<<std::endl;
+    }
+
+    nlp_problem.AddConstraintSet(dynamicConstraint);
+    Eigen::VectorXd constraintValues = dynamicConstraint->GetValues();
+    std::cout<<"Dynamic constraint values: "<<constraintValues.transpose()<<std::endl;
+}
+
+}

@@ -26,7 +26,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
-
+#include <iostream>
 #include <towr/variables/nodes.h>
 
 
@@ -113,9 +113,15 @@ Nodes::GetValues () const
 {
   VectorXd x(GetRows());
 
-  for (int idx=0; idx<x.rows(); ++idx)
-    for (auto info : GetNodeInfoAtOptIndex(idx))
-      x(idx) = nodes_.at(info.node_id_).at(info.node_deriv_)(info.node_dim_);
+  for (int idx=0; idx<x.rows(); ++idx){
+	  std::cout<<"index "<<idx<<std::endl;
+	  for (auto info : GetNodeInfoAtOptIndex(idx)){
+		  x(idx) = nodes_.at(info.node_id_).at(info.node_deriv_)(info.node_dim_);
+		  std::cout<<"node value: "<<x(idx)<<" at index info "<<info.node_id_<<std::endl;
+	  }
+
+  }
+
 
   return x;
 }
