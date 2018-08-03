@@ -10,7 +10,7 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
-#include <towr/towr.h>
+#include <towr/nlp_formulation.h>
 #include <towr/models/centroidal_model.h>
 #include <ifopt/ipopt.h>
 #include <ifopt/composite.h>

@@ -93,10 +93,8 @@ find_package(GTest QUIET)
 if (TARGET GTest::GTest) # only build when modern targets exists
 
   add_executable(${PROJECT_NAME}-test
-    test/centroidal_dynamics_test.cc
     test/single_hop_example_test.cc
-    test/phase_nodes_test.cc
-    test/dynamic_constraint_test.cc
+    #test/phase_nodes_test.cc
     test/dynamic_model_test.cc
   )
   target_link_libraries(${PROJECT_NAME}-test

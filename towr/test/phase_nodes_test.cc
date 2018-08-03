@@ -8,12 +8,9 @@
  */
 #include <iostream>
 #include <gtest/gtest.h>
-
-#include <towr/nlp_factory.h>
-
+#include <towr/nlp_formulation.h>
 #include <towr/variables/variable_names.h>
-#include <towr/variables/base_nodes.h>
-
+//#include <towr/variables/base_nodes.h>
 #include <towr/models/centroidal_model.h>
 
 
@@ -24,8 +21,8 @@ namespace towr {
 * are actually splined from the inital desired value to the final desired value using the InitializeNodesTowardsGoal method */
 TEST(PhaseNodesTest, motionPhaseNodesStartInSwing){
 
-	NlpFactory nlp;
-	std::vector<PhaseNodes::Ptr> vars;
+	NlpFormulation nlp;
+	std::vector<NodesVariables::Ptr> vars;
 
 	double T = 1.5;
 	int ee = 0;
@@ -40,8 +37,8 @@ TEST(PhaseNodesTest, motionPhaseNodesStartInSwing){
 	const std::string var_name  ="vars";
 	int n_polys_in_changing_phase = 2;
 
-	auto motionNodes = std::make_shared<PhaseNodes>(phase_count, in_contact_start, var_name,
-													n_polys_in_changing_phase, PhaseNodes::Motion);
+	auto motionNodes = std::make_shared<NodesVariables>(phase_count, in_contact_start, var_name,
+													n_polys_in_changing_phase, NodesVariables::Motion);
 	Eigen::VectorXd motion_values = motionNodes->GetValues();
 	std::cout<<"default motion nodes values: "<<motion_values.transpose()<<std::endl;
 
@@ -62,7 +59,7 @@ TEST(PhaseNodesTest, motionPhaseNodesStartInSwing){
 
 TEST(PhaseNodesTest, motionPhaseNodesStartInStance){
 
-	NlpFactory nlp;
+	NlpFormulation nlp;
 	std::vector<PhaseNodes::Ptr> vars;
 
 	double T = 1.5;
@@ -100,7 +97,7 @@ TEST(PhaseNodesTest, motionPhaseNodesStartInStance){
 
 TEST(PhaseNodesTest, forcePhaseNodesStartInStance){
 
-	NlpFactory nlp;
+	NlpFormulation nlp;
 	std::vector<PhaseNodes::Ptr> vars;
 
 	double T = 1.5;
@@ -139,7 +136,7 @@ TEST(PhaseNodesTest, forcePhaseNodesStartInStance){
 
 TEST(PhaseNodesTest, forcePhaseNodesStartInSwing){
 
-	NlpFactory nlp;
+	NlpFormulation nlp;
 	std::vector<PhaseNodes::Ptr> vars;
 
 	double T = 1.5;
@@ -215,7 +212,7 @@ TEST(PhaseNodesTest, splineHolderTest){
 	double max_phase_duration = 1.0;
 	params.ee_in_contact_at_start_.push_back(true);
 
-	NlpFactory nlp;
+	NlpFormulation nlp;
 	std::vector<PhaseNodes::Ptr> vars;
 
 	//double T = 1.5;
