@@ -11,8 +11,8 @@
 
 #include <cmath>
 #include <towr/nlp_formulation.h>
-#include <towr/models/centroidal_model.h>
-#include <ifopt/ipopt.h>
+#include <towr/models/single_rigid_body_dynamics.h>
+#include <ifopt/ipopt_solver.h>
 #include <ifopt/composite.h>
 using namespace towr;
 using VariablePtrVec   = std::vector<ifopt::VariableSet::Ptr>;
