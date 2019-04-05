@@ -30,6 +30,7 @@ add_library(${PROJECT_NAME} SHARED
   src/dynamic_model.cc
   src/single_rigid_body_dynamics.cc
   # constraints
+  src/base_acc.cc
   src/time_discretization_constraint.cc
   src/base_motion_constraint.cc
   src/terrain_constraint.cc
