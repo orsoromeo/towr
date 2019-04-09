@@ -27,8 +27,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
-#ifndef TOWR_CONSTRAINTS_BASE_MOTION_CONSTRAINT_H_
-#define TOWR_CONSTRAINTS_BASE_MOTION_CONSTRAINT_H_
+#ifndef TOWR_CONSTRAINTS_BASE_ACC_H_
+#define TOWR_CONSTRAINTS_BASE_ACC_H_
 
 #include <towr/variables/spline_holder.h>
 #include <towr/variables/spline.h>
@@ -44,7 +44,7 @@ namespace towr {
  *
  * @ingroup Constraints
  */
-class BaseAccConstraintValue : public TimeDiscretizationConstraint {
+class BaseAccConstraintRange : public TimeDiscretizationConstraint {
 public:
   /**
    * @brief Links the base variables and sets hardcoded bounds on the state.
@@ -52,8 +52,8 @@ public:
    * @param dt The discretization interval of the constraints.
    * @param spline_holder  Holds pointers to the base variables.
    */
-  BaseAccConstraintValue (double T, double dt, const SplineHolder& spline_holder);
-  virtual ~BaseMotionConstraint () = default;
+  BaseAccConstraintRange (double T, double dt, const SplineHolder& spline_holder);
+  virtual ~BaseAccConstraintRange () = default;
 
   void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
   void UpdateBoundsAtInstance (double t, int k, VecBound&) const override;

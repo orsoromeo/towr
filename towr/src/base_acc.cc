@@ -35,36 +35,38 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace towr {
 
 
-BaseAccConstraintValue::BaseAccConstraintValue (double T, double dt,
+BaseAccConstraintRange::BaseAccConstraintRange (double T, double dt,
                                             const SplineHolder& spline_holder) //forse non mi serve spline_holder
     :TimeDiscretizationConstraint(T, dt, "baseAccConstraintValue")
 {
-  //base_linear_  = spline_holder.base_linear_;
-  //base_angular_ = spline_holder.base_angular_;
+  base_linear_  = spline_holder.base_linear_;
+  base_angular_ = spline_holder.base_angular_;
 
   SetRows(GetNumberOfNodes()*k3D);
 }
 
 void
-BaseAccConstraintValue::UpdateConstraintAtInstance (double t, int k,
+BaseAccConstraintRange::UpdateConstraintAtInstance (double t, int k,
                                                   VectorXd& g) const
 {
-  g.middleRows(GetRow(k, LX), k3D) = com_acc_
-  //g.middleRows(GetRow(k, AX), k3D) = base_angular_->GetPoint(t).p();
-  //Eigen::VectorXd l(3);
-  //l=(1,1,1)
-  g.middleRows(GetRow(k, AX), k3D)=(1,1,1).transpose();
+  auto com = base_linear_->GetPoint(t);
+  auto com1 = base_angular_->GetPoint(t);
+  g.middleRows(GetRow(k, LX), k3D) = com.a();
+  g.middleRows(GetRow(k, AX), k3D) = com1.a();
+  //Eigen::Matrix<int,3,1> l;
+  //l << 1,1,1;
+  //g.middleRows(GetRow(k, AX), k3D)=l.transpose();
 }
 
 void
-BaseAccConstraintValue::UpdateBoundsAtInstance (double t, int k, VecBound& bounds) const
+BaseAccConstraintRange::UpdateBoundsAtInstance (double t, int k, VecBound& bounds) const
 {
   for (int dim=0; dim<node_bounds_.size(); ++dim)
     bounds.at(GetRow(k,dim)) = (0,100);
 }
 
 void
-BaseAccConstraintValue::UpdateJacobianAtInstance (double t, int k,
+BaseAccConstraintRange::UpdateJacobianAtInstance (double t, int k,
                                                 std::string var_set,
                                                 Jacobian& jac) const
 {
@@ -76,7 +78,7 @@ BaseAccConstraintValue::UpdateJacobianAtInstance (double t, int k,
 }
 
 int
-BaseAccConstraintValue::GetRow (int node, int dim) const
+BaseAccConstraintRange::GetRow (int node, int dim) const
 {
   return node*node_bounds_.size() + dim;
 }
