@@ -39,8 +39,9 @@ TEST(TOWR, optimizeTrajectory){
         //test to apply only the sline acc constraint (not costs) to a monoped robot which has to do only one jump
 
         formulation.terrain_ = std::make_shared<FlatGround>(0.0);
-        formulation.final_base_.lin.at(towr::kPos) << 1.0, 0.0, 0.5;
-        formulation.initial_ee_W_.push_back(Eigen::Vector3d::Zero());
+        formulation.initial_base_.lin.at(kPos) << 10.0, 0.0, 0.5;
+        formulation.final_base_.lin.at(towr::kPos) << 11.0, 0.0, 0.5;
+        formulation.initial_ee_W_.push_back(Eigen::Vector3d(10.0, 0.0, 0.0));
 
         // Kinematic limits and dynamic parameters of the hopper
         formulation.model_ = RobotModel(RobotModel::Monoped);
@@ -50,6 +51,8 @@ TEST(TOWR, optimizeTrajectory){
 	double min_phase_duration = 0.1;
 	double max_phase_duration = 2.0;
 	ifopt::Composite composite("composite", false);
+
+        formulation.params_.OptimizePhaseDurations();
         formulation.params_.ee_phase_durations_.push_back(initial_durations);
         formulation.params_.ee_in_contact_at_start_.push_back(is_first_phase_contact);
         PhaseDurations phase_durations(eeID,
@@ -116,10 +119,15 @@ TEST(TOWR, optimizeTrajectory){
             cout << "t=" << t << "\n";
             cout << "Base linear position x,y,z:   \t";
             cout << solution.base_linear_->GetPoint(t).p().transpose() << "\t[m]" << endl;
-
+            cout << "Base linear vel x,y,z:   \t";
+            cout << solution.base_linear_->GetPoint(t).v().transpose() << "\t[m/s]" << endl;
+            
             cout << "Base Euler roll, pitch, yaw:  \t";
             Eigen::Vector3d rad = solution.base_angular_->GetPoint(t).p();
             cout << (rad/M_PI*180).transpose() << "\t[deg]" << endl;
+            cout << "Base Euler roll, pitch, yaw vel:  \t";
+            Eigen::Vector3d rad1 = solution.base_angular_->GetPoint(t).v();
+            cout<<rad1.transpose()<<endl;
 
             cout << "Foot position x,y,z:          \t";
             cout << solution.ee_motion_.at(0)->GetPoint(t).p().transpose() << "\t[m]" << endl;
@@ -131,8 +139,11 @@ TEST(TOWR, optimizeTrajectory){
             std::string foot_in_contact = contact? "yes" : "no";
             cout << "Foot in contact:              \t" + foot_in_contact << endl;
 
-            cout << endl;
-
-            t += 0.2;
+            //cout << "Phase durations:              \t" << endl;
+            //for (int j = 0; j<3; j++){
+            //cout<<solution.phase_durations_[j];
+            //cout << endl;
+            //} 
+            t += 0.05;
             }
 }
