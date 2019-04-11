@@ -43,13 +43,13 @@ TEST(PhaseNodesTest, motionPhaseNodesStartInSwing){
 													ee_polynomials_per_swing_phase);
 
 	Eigen::VectorXd motion_values = motionNodes->GetValues();
-	std::cout<<"default motion nodes values: "<<motion_values.transpose()<<std::endl;
-	std::cout<<"number_of_variables: "<<number_of_variables<<std::endl;
+  //std::cout<<"default motion nodes values: "<<motion_values.transpose()<<std::endl;
+  //std::cout<<"number_of_variables: "<<number_of_variables<<std::endl;
 
-	for (int idx = 0; idx<number_of_variables; idx++){
-		std::cout<<motion_values(idx)<<std::endl;
-		EXPECT_EQ(0.0, motion_values(idx));
-	}
+  //for (int idx = 0; idx<number_of_variables; idx++){
+  //	std::cout<<motion_values(idx)<<std::endl;
+  //  //EXPECT_EQ(0.0, motion_values(idx));
+  //}
 
     Eigen::Vector3d initial_ee_pos_W = Eigen::Vector3d(1.0, 0.0, 0.42);
     Eigen::Vector3d final_ee_pos_W = Eigen::Vector3d(3.0, 0.0, 0.42);

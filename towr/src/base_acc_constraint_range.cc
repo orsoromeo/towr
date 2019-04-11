@@ -27,7 +27,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
-#include <towr/constraints/base_acc.h>
+#include <towr/constraints/base_acc_constraint_range.h>
 #include <towr/variables/variable_names.h>
 #include <towr/variables/cartesian_dimensions.h>
 #include <towr/variables/spline_holder.h>
@@ -42,7 +42,7 @@ BaseAccConstraintRange::BaseAccConstraintRange (double T, double dt,
   base_linear_  = spline_holder.base_linear_;
   base_angular_ = spline_holder.base_angular_;
 
-  SetRows(GetNumberOfNodes()*k3D);
+  SetRows(GetNumberOfNodes()*k6D);
 }
 
 void
@@ -62,7 +62,7 @@ void
 BaseAccConstraintRange::UpdateBoundsAtInstance (double t, int k, VecBound& bounds) const
 {
   for (int dim=0; dim<node_bounds_.size(); ++dim)
-    bounds.at(GetRow(k,dim)) = (0,100);
+    bounds.at(GetRow(k,dim)) = (-100,100);
 }
 
 void
@@ -70,13 +70,23 @@ BaseAccConstraintRange::UpdateJacobianAtInstance (double t, int k,
                                                 std::string var_set,
                                                 Jacobian& jac) const
 {
+  int i=0;
   if (var_set == id::base_ang_nodes)
-    jac.middleRows(GetRow(k,AX), k3D) = base_angular_->GetJacobianWrtNodes(t, kPos);
+    //jac.middleRows(GetRow(k,AX), k3D) = Eigen::MatrixXd::Identity(3,3);
+
+  {
+
+     jac.coeffRef(i++,6)=1;
+     jac.coeffRef(i++,7)=1;
+     jac.coeffRef(i++,8)=1;
+    }
 
   if (var_set == id::base_lin_nodes)
-    jac.middleRows(GetRow(k,LX), k3D) = base_linear_->GetJacobianWrtNodes(t, kPos);
+  { jac.coeffRef(3+i++,6+9)=1;
+    jac.coeffRef(3+i++,7+9)=1;
+    jac.coeffRef(3+i++,8+9)=1;
+  }
 }
-
 int
 BaseAccConstraintRange::GetRow (int node, int dim) const
 {

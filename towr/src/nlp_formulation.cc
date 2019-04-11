@@ -40,7 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr/constraints/terrain_constraint.h>
 #include <towr/constraints/total_duration_constraint.h>
 #include <towr/constraints/spline_acc_constraint.h>
-#include <towr/constraints/base_acc.h>
+#include <towr/constraints/base_acc_constraint_range.h>
 
 #include <towr/costs/node_cost.h>
 #include <towr/variables/nodes_variables_all.h>
@@ -331,7 +331,13 @@ NlpFormulation::MakeBaseAccConstraint (const SplineHolder& s) const
 
   return constraints;
 }
-
+NlpFormulation::ContraintPtrVec
+NlpFormulation::MakeBaseAccConstraintValue (const SplineHolder& s) const
+{
+  return {std::make_shared<BaseAccConstraintRange>(params_.GetTotalTime(),
+                                                 params_.dt_constraint_base_motion_,
+                                                   s)};
+}
 NlpFormulation::ContraintPtrVec
 NlpFormulation::GetCosts() const
 {
@@ -377,11 +383,5 @@ NlpFormulation::MakeEEMotionCost(double weight) const
   return cost;
 }
 
-NlpFormulation::ContraintPtrVec
-NlpFormulation::MakeBaseAccConstraintValue (const SplineHolder& s) const
-{
-  return {std::make_shared<BaseAccConstraintRange>(params_.GetTotalTime(),
-                                                 params_.dt_constraint_base_motion_,
-                                                 s)};
-} //non so se mi serve s
+
 } /* namespace towr */
