@@ -101,8 +101,8 @@ TEST(TOWR, optimizeTrajectory){
           //SplineAccConstraint AccConstraint_;
           //AccConstraint_.FillJacobianBlock("splineacc",jac);
           //AccConstraint_.GetBounds ();
-          //auto solver = std::make_shared<ifopt::IpoptSolver>();
-          ifopt::IpoptSolver::Ptr solver;
+          auto solver = std::make_shared<ifopt::IpoptSolver>();
+          //ifopt::IpoptSolver::Ptr solver;
           solver->SetOption("jacobian_approximation", "exact"); // "finite difference-values"
           solver->SetOption("max_cpu_time", 20.0);
           //nlp.AddVariableSet(vars);
