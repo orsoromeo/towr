@@ -105,29 +105,33 @@ TEST(TOWR, optimizeTrajectory){
           constraints.push_back(std::make_shared<BaseAccConstraintRangeLin>(formulation.params_.GetTotalTime(),
                                                                             formulation.params_.dt_constraint_base_acc_,
                                                                             solution.base_linear_, id::base_lin_nodes)) ;
+          
           constraints.push_back(std::make_shared<BaseAccConstraintRangeAng>(formulation.params_.GetTotalTime(),
                                                                             formulation.params_.dt_constraint_base_acc_,
                                                                             solution.base_angular_, id::base_ang_nodes)) ;
 
 
-          //constraint.push_back(std::make_shared<BaseMotionConstraint>(formulation.params_.GetTotalTime(),
-          //                                                            formulation.params_.dt_constraint_base_motion_,
-          //                                                            solution));
-          //
-          //constraint.push_back(std::make_shared<DynamicConstraint>(formulation.model_.dynamic_model_,
-          //                                                        formulation.params_.GetTotalTime(),
-          //                                                        formulation.params_.dt_constraint_dynamic_,
-          //                                                        solution));
-          //
-          //
-
-          constraint.push_back(std::make_shared<TotalDurationConstraint>(formulation.params_.GetTotalTime(),formulation.params_.GetEECount()-1));
-          constraint.push_back(std::make_shared<TerrainConstraint>(formulation.terrain_,  "ee-motion_" + std::to_string(formulation.params_.GetEECount()-1));
-
+          constraints.push_back(std::make_shared<BaseMotionConstraint>(formulation.params_.GetTotalTime(),
+                                                                      formulation.params_.dt_constraint_base_motion_,
+                                                                      solution));
+          
+          constraints.push_back(std::make_shared<DynamicConstraint>(formulation.model_.dynamic_model_,
+                                                                  formulation.params_.GetTotalTime(),
+                                                                  formulation.params_.dt_constraint_dynamic_,
+                                                                  solution));
+          
+          
+          auto ee_motion_name =  "ee-motion_" + std::to_string(formulation.params_.GetEECount()-1);
+          int ee_count = formulation.params_.GetEECount()-1;
+          std::cout<<ee_count<<std::endl;
+          double tot_time = formulation.params_.GetTotalTime();
+          std::cout<<tot_time<<std::endl;
+          //constraints.push_back(std::make_shared<TotalDurationConstraint>(tot_time, ee_count));
+          constraints.push_back(std::make_shared<TerrainConstraint>(formulation.terrain_, ee_motion_name));
           //devo lanciarlo per tutti gli elementi di constraints!
 
           for (auto l:constraints)
-          nlp.AddConstraintSet(l);
+            nlp.AddConstraintSet(l);
 
           //for (auto c : formulation.GetCosts())
           //  nlp.AddCostSet(c);
