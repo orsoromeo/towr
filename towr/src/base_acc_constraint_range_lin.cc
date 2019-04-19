@@ -42,8 +42,8 @@ BaseAccConstraintRangeLin::BaseAccConstraintRangeLin (double T, double dt,
 {
  node_variables_id_=node_variable_name;
  spline_=spline;
- node_bounds_.resize(k3D);
- SetRows(spline_->GetPolynomialCount()*k3D);
+ node_bounds_.resize(4);
+ SetRows(spline_->GetPolynomialCount()*4);
 }
 
 void
@@ -53,7 +53,7 @@ BaseAccConstraintRangeLin::UpdateConstraintAtInstance (double t, int k,
   {
 
     auto com=spline_->GetPoint(t);
-    g.middleRows(GetRow(k, 0), k3D) = com.a();
+    g.middleRows(GetRow(k, 0), 4) =FillConstraint(com);
     std::cout<<"l' acc lin è "<<com.a()<<std::endl;
   }
 }
@@ -80,7 +80,7 @@ BaseAccConstraintRangeLin::UpdateJacobianAtInstance (double t, int k,
    //if (var_set==id::base_lin_nodes)
    if (var_set ==node_variables_id_)
     {
-      jac.middleRows(3*k,3)=spline_->GetJacobianWrtNodes(k,0.1, kAcc);
+      jac.middleRows(4*k,4)=FillJacobian(spline_,k); //spline_->GetJacobianWrtNodes(k,0.1, kAcc);
 
      }
  }
@@ -90,6 +90,34 @@ BaseAccConstraintRangeLin::GetRow (int node, int dim) const
 {
   return node*node_bounds_.size() + dim;
 }
+Eigen::VectorXd
+BaseAccConstraintRangeLin::FillConstraint (State com) const
+{
+  VectorXd g;
+  int mu=1;
+  g(0)=com.a().x()+mu*com.a().z();
+  g(1)=com.a().y()+mu*com.a().z();
+  g(2)=com.a().x()-mu*com.a().z();
+  g(3)=com.a().y()-mu*com.a().z();
+  return g;
+}
+NodeSpline::Jacobian
+BaseAccConstraintRangeLin::FillJacobian(NodeSpline::Ptr spline_,int k) const
+{
+  auto jac1=spline_->GetJacobianWrtNodes(k,0.1, kAcc);
+  int mu=1;
+  Jacobian g=spline_->GetJacobianWrtNodes(k,0.1, kAcc);
+  std::cout<<"doing g"<<std::endl;
+  std::cout<<"g 0: "<<g.row(0)<<std::endl;
+  std::cout<<"jac1 0: "<<jac1.row(0)+mu*jac1.row(2)<<std::endl;
+  g.row(0)=jac1.row(0)+mu*jac1.row(2);
+  g.row(1)=jac1.row(1)+mu*jac1.row(2);
+  g.row(2)=jac1.row(0)-mu*jac1.row(2);
+  std::cout<<" problem! "<<std::endl;
+  g.row(3)=jac1.row(1)-mu*jac1.row(2);
+  std::cout<<"g done"<<std::endl;
+  return g;
 
+}
 } /* namespace towr */
 
