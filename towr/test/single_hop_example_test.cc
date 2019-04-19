@@ -21,6 +21,15 @@
 #include <towr/constraints/swing_constraint.h>
 #include <towr/constraints/base_acc_constraint_range_lin.h>
 #include <towr/constraints/base_acc_constraint_range_ang.h>
+#include <towr/constraints/base_motion_constraint.h>
+#include <towr/constraints/dynamic_constraint.h>
+#include <towr/constraints/force_constraint.h>
+#include <towr/constraints/range_of_motion_constraint.h>
+#include <towr/constraints/swing_constraint.h>
+#include <towr/constraints/terrain_constraint.h>
+#include <towr/constraints/total_duration_constraint.h>
+
+
 #include <ifopt/ipopt_solver.h>
 #include <ifopt/composite.h>
 
@@ -111,22 +120,9 @@ TEST(TOWR, optimizeTrajectory){
           //                                                        solution));
           //
           //
-          //constraint.push_back(std::make_shared<RangeOfMotionConstraint>(formulation.model_.kinematic_model_,
-          //                                                         formulation.params_.GetTotalTime(),
-          //                                                         formulation.params_.dt_constraint_range_of_motion_,
-          //                                                         formulation.params_.GetEECount()-1,
-          //                                                         solution));
-          //
-          //NlpFormulation::ContraintPtrVec
-          //NlpFormulation::MakeTotalTimeConstraint () const
-          //{
-          //  ContraintPtrVec c;
-          //  double T = params_.GetTotalTime();
-          //
-          //  for (int ee=0; ee<params_.GetEECount(); ee++) {
-          //    auto duration_constraint = std::make_shared<TotalDurationConstraint>(T, ee);
-          //
-          //constraint.push_back(std::make_shared<TerrainConstraint>(formulation.terrain_, id::EEMotionNodes(ee));
+
+          constraint.push_back(std::make_shared<TotalDurationConstraint>(formulation.params_.GetTotalTime(),formulation.params_.GetEECount()-1));
+          constraint.push_back(std::make_shared<TerrainConstraint>(formulation.terrain_,  "ee-motion_" + std::to_string(formulation.params_.GetEECount()-1));
 
           //devo lanciarlo per tutti gli elementi di constraints!
 
