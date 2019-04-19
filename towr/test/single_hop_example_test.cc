@@ -126,8 +126,8 @@ TEST(TOWR, optimizeTrajectory){
             Eigen::Vector3d rad = solution.base_angular_->GetPoint(t).p();
             cout << (rad/M_PI*180).transpose() << "\t[deg]" << endl;
             cout << "Base Euler roll, pitch, yaw vel:  \t";
-            Eigen::Vector3d rad1 = solution.base_angular_->GetPoint(t).v();
-            cout<<rad1.transpose()<<endl;
+            Eigen::Vector3d ang_vel = solution.base_angular_->GetPoint(t).v();
+            cout<< (ang_vel/M_PI*180).transpose() << "\t[deg/s]" << endl;
 
             cout << "Foot position x,y,z:          \t";
             cout << solution.ee_motion_.at(0)->GetPoint(t).p().transpose() << "\t[m]" << endl;
