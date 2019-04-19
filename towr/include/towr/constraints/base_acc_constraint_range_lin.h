@@ -58,8 +58,9 @@ public:
   void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
   void UpdateBoundsAtInstance (double t, int k, VecBound&) const override;
   void UpdateJacobianAtInstance(double t, int k, std::string, Jacobian&) const override;
-
 private:
+  VectorXd FillConstraint (State com) const;
+  NodeSpline::Jacobian FillJacobian(NodeSpline::Ptr spline_, int k) const;
   NodeSpline::Ptr base_linear_;
   NodeSpline::Ptr base_angular_;
   NodeSpline::Ptr spline_;        ///< a spline comprised of polynomials

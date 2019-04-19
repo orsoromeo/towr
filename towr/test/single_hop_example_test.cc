@@ -65,10 +65,9 @@ TEST(TOWR, optimizeTrajectory){
 	double max_phase_duration = 2.0;
 
         formulation.params_.force_limit_in_normal_direction_=2000;
-        //formulation.params_.OptimizePhaseDurations();
+        formulation.params_.OptimizePhaseDurations();
         //formulation.params_.dt_constraint_base_acc_=0.1; i have added it in the parameter class
         formulation.params_.ee_phase_durations_.push_back(initial_durations);
-        std::cout<<"total time is "<<formulation.params_.GetTotalTime()<<std::endl;
         formulation.params_.ee_in_contact_at_start_.push_back(is_first_phase_contact);
         PhaseDurations phase_durations(eeID,
                                                                 initial_durations,
@@ -110,7 +109,6 @@ TEST(TOWR, optimizeTrajectory){
                                                                             formulation.params_.dt_constraint_base_acc_,
                                                                             solution.base_angular_, id::base_ang_nodes)) ;
 
-
           constraints.push_back(std::make_shared<BaseMotionConstraint>(formulation.params_.GetTotalTime(),
                                                                       formulation.params_.dt_constraint_base_motion_,
                                                                       solution));
@@ -128,6 +126,8 @@ TEST(TOWR, optimizeTrajectory){
           std::cout<<tot_time<<std::endl;
           //constraints.push_back(std::make_shared<TotalDurationConstraint>(tot_time, ee_count));
           constraints.push_back(std::make_shared<TerrainConstraint>(formulation.terrain_, ee_motion_name));
+
+
           //devo lanciarlo per tutti gli elementi di constraints!
 
           for (auto l:constraints)
