@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr/variables/variable_names.h>
 #include <towr/variables/cartesian_dimensions.h>
 #include <towr/variables/spline_holder.h>
+#include <iostream>
 
 
 
@@ -58,7 +59,7 @@ BaseAccConstraintRangeAng::UpdateConstraintAtInstance (double t, int k,
 
    auto com = base_angular_.GetAngularAccelerationInWorld(t);
    g.middleRows(GetRow(k, AX), k3D) = com;
-   std::cout<<"l' acc ang è "<<com<<std::endl;
+   //std::cout<<"l' acc ang è "<<com<<std::endl;
 
   }
 }
