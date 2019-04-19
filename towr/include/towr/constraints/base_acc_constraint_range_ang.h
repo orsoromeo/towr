@@ -27,78 +27,48 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
-#include <towr/constraints/time_discretization_constraint.h>
-#include<iostream>
-#include <cmath>
+#ifndef TOWR_CONSTRAINTS_BASE_ACC_CONSTRAINT_RANGE_ANG_H_
+#define TOWR_CONSTRAINTS_BASE_ACC_CONSTRAINT_RANGE_ANG_H_
+
+#include <towr/variables/spline_holder.h>
+#include <towr/variables/spline.h>
+#include <towr/variables/euler_converter.h>
+#include "time_discretization_constraint.h"
 
 namespace towr {
 
+/**
+ * @brief Keeps the base acc in a specified range.
+ *
+ * 
+ *
+ * @ingroup Constraints
+ */
+class BaseAccConstraintRangeAng : public TimeDiscretizationConstraint {
+public:
+  /**
+   * @brief Links the base variables and sets hardcoded bounds on the state.
+   * @param T  The total time of the optimization horizon.
+   * @param dt The discretization interval of the constraints.
+   * @param spline_holder  Holds pointers to the base variables.
+   */
+  BaseAccConstraintRangeAng (double T, double dt, const NodeSpline::Ptr& spline, std::string name );
+  virtual ~BaseAccConstraintRangeAng () = default;
 
-TimeDiscretizationConstraint::TimeDiscretizationConstraint (double T, double dt,
-                                                            std::string name)
-    :ConstraintSet(kSpecifyLater, name)
-{
-  double t = 0.0;
-  dts_ = {t};
+  void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
+  void UpdateBoundsAtInstance (double t, int k, VecBound&) const override;
+  void UpdateJacobianAtInstance(double t, int k, std::string, Jacobian&) const override;
 
-  for (int i=0; i<floor(T/dt); ++i) {
-    t += dt;
-    dts_.push_back(t);
-  }
-
-  dts_.push_back(T); // also ensure constraints at very last node/time.
-
-}
-
-TimeDiscretizationConstraint::TimeDiscretizationConstraint (const VecTimes& times,
-                                                            std::string name)
-   :ConstraintSet(kSpecifyLater, name) // just placeholder
-{
-  dts_ = times;
-}
-
-int
-TimeDiscretizationConstraint::GetNumberOfNodes () const
-{
-  return dts_.size();
-}
-
-TimeDiscretizationConstraint::VectorXd
-TimeDiscretizationConstraint::GetValues () const
-{
-
-  VectorXd g = VectorXd::Zero(GetRows());
-
-  int k = 0;
-  for (double t : dts_)
-  {
-    UpdateConstraintAtInstance(t, k++, g);
-  }
-  return g;
-}
-
-TimeDiscretizationConstraint::VecBound
-TimeDiscretizationConstraint::GetBounds () const
-{
-
-  VecBound bounds(GetRows());
-
-  int k = 0;
-  for (double t : dts_)
-    UpdateBoundsAtInstance(t, k++, bounds);
-
-  return bounds;
-}
-
-void
-TimeDiscretizationConstraint::FillJacobianBlock (std::string var_set,
-                                                  Jacobian& jac) const
-{
-  int k = 0;
-  for (double t : dts_)
-    UpdateJacobianAtInstance(t, k++, var_set, jac);
-}
+private:
+  NodeSpline::Ptr base_linear_;
+  EulerConverter base_angular_;
+  NodeSpline::Ptr spline_;        ///< a spline comprised of polynomials
+  VecBound node_bounds_;
+  std::string node_variables_id_;
+  int GetRow (int node, int dim) const;
+};
 
 } /* namespace towr */
 
+#endif /* TOWR_CONSTRAINTS_BASE_MOTION_CONSTRAINT_H_ */
 

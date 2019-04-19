@@ -26,7 +26,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
-
+#include<iostream>
 #include <towr/parameters.h>
 #include <towr/variables/cartesian_dimensions.h>
 
@@ -50,15 +50,17 @@ Parameters::Parameters ()
   dt_constraint_dynamic_ = 0.1;
   dt_constraint_base_motion_ = duration_base_polynomial_/4.; // only for base RoM constraint
   bound_phase_duration_ = std::make_pair(0.2, 1.0);  // used only when optimizing phase durations, so gait
+  dt_constraint_base_acc_=0.1;
 
   // a minimal set of basic constraints
   constraints_.push_back(Terrain);
   constraints_.push_back(Dynamic); //Ensures that the dynamic model is fullfilled at discrete times.
   constraints_.push_back(BaseAcc); // so accelerations don't jump between polynomials
   constraints_.push_back(EndeffectorRom); //Ensures that the range of motion is respected at discrete times.
-  constraints_.push_back(Force); // ensures unilateral forces and inside the friction cone.
+  //constraints_.push_back(Force); // ensures unilateral forces and inside the friction cone.
   constraints_.push_back(Swing); // creates smoother swing motions, not absolutely required.
-  //constraints_.push_back(BaseAccConstraintValue);//accelerations are buonded
+  constraints_.push_back(BaseAccConstraintValueLin);//accelerations are buonded
+  constraints_.push_back(BaseAccConstraintValueAng);//accelerations are buonded
 
   // optional costs to e.g penalize endeffector forces
   // costs_.push_back({ForcesCostID, 1.0}); weighed by 1.0 relative to other costs
@@ -124,6 +126,7 @@ Parameters::GetTotalTime () const
     assert(fabs(Tf - T) < 1e-6);
 
   return T;
+
 }
 
 bool

@@ -28,7 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include <towr/variables/polynomial.h>
-
+#include <iostream>
 #include <cassert>
 #include <cmath>
 
@@ -101,6 +101,7 @@ CubicHermitePolynomial::UpdateCoeff()
   coeff_[B] =  n0_.v();
   coeff_[C] = -( 3*(n0_.p() - n1_.p()) +  T_*(2*n0_.v() + n1_.v()) ) / std::pow(T_,2);
   coeff_[D] =  ( 2*(n0_.p() - n1_.p()) +  T_*(  n0_.v() + n1_.v()) ) / std::pow(T_,3);
+
 }
 
 double

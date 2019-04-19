@@ -41,6 +41,7 @@ int
 NodesVariables::GetOptIndex(const NodeValueInfo& nvi_des) const
 {
   // could also cache this as map for more efficiency, but adding complexity
+  
   for (int idx=0; idx<GetRows(); ++idx)
     for ( NodeValueInfo nvi : GetNodeValuesInfo(idx))
       if ( nvi == nvi_des )

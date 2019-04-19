@@ -136,15 +136,16 @@ public:
    * @brief Identifiers to be used to add certain constraints to the
    * optimization problem.
    */
-  enum ConstraintName { Dynamic,        ///< sets DynamicConstraint
-                        EndeffectorRom, ///< sets RangeOfMotionConstraint
-                        TotalTime,      ///< sets TotalDurationConstraint
-                        Terrain,        ///< sets TerrainConstraint
-                        Force,          ///< sets ForceConstraint
-                        Swing,          ///< sets SwingConstraint
-                        BaseRom,        ///< sets BaseMotionConstraint
-                        BaseAcc,         ///< sets SplineAccConstraint
-                        BaseAccConstraintValue ///< sets BaseAccRangeConstraint
+  enum ConstraintName { Dynamic,                     ///< sets DynamicConstraint
+                        EndeffectorRom,              ///< sets RangeOfMotionConstraint
+                        TotalTime,                   ///< sets TotalDurationConstraint
+                        Terrain,                     ///< sets TerrainConstraint
+                        Force,                       ///< sets ForceConstraint
+                        Swing,                       ///< sets SwingConstraint
+                        BaseRom,                     ///< sets BaseMotionConstraint
+                        BaseAcc,                     ///< sets SplineAccConstraint
+                        BaseAccConstraintValueLin,   ///< sets BaseAccRangeConstraintLin
+                        BaseAccConstraintValueAng    ///< sets BaseAccRangeConstraintAng
                       };
   /**
    *  @brief Indentifiers to be used to add certain costs to the optimization
@@ -185,6 +186,8 @@ public:
 
   /// Interval at which the base motion constraint is enforced.
   double dt_constraint_base_motion_;
+  /// I have added this parameter for my constraint base_acc
+  double dt_constraint_base_acc_;
 
   /// Fixed duration of each cubic polynomial describing the base motion.
   double duration_base_polynomial_;

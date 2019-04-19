@@ -1,4 +1,4 @@
-/******************************************************************************
+ /******************************************************************************
 Copyright (c) 2018, Alexander W. Winkler. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include <towr/constraints/spline_acc_constraint.h>
+#include<iostream>
 
 namespace towr {
 
@@ -74,8 +75,8 @@ SplineAccConstraint::FillJacobianBlock (std::string var_set, Jacobian& jac) cons
       int p_next = j+1;
       Jacobian acc_next = spline_->GetJacobianWrtNodes(p_next, 0.0, kAcc);
 
-      jac.middleRows(j*n_dim_, n_dim_) = acc_prev - acc_next;
-    }
+      jac.middleRows(j*n_dim_, n_dim_) = acc_prev - acc_next; }
+
   }
 }
 
