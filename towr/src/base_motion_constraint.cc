@@ -55,6 +55,7 @@ BaseMotionConstraint::BaseMotionConstraint (double T, double dt,
 
   int n_constraints_per_node = node_bounds_.size();
   SetRows(GetNumberOfNodes()*n_constraints_per_node);
+  
 }
 
 void

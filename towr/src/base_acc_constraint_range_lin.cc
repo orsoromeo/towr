@@ -27,68 +27,66 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
-#include <towr/constraints/base_acc_constraint_range.h>
+#include <towr/constraints/base_acc_constraint_range_lin.h>
 #include <towr/variables/variable_names.h>
 #include <towr/variables/cartesian_dimensions.h>
 #include <towr/variables/spline_holder.h>
 
+
 namespace towr {
 
 
-BaseAccConstraintRange::BaseAccConstraintRange (double T, double dt,
-                                            const SplineHolder& spline_holder) //forse non mi serve spline_holder
-    :TimeDiscretizationConstraint(T, dt, "baseAccConstraintValue")
+BaseAccConstraintRangeLin::BaseAccConstraintRangeLin (double T, double dt,
+                                            const NodeSpline::Ptr& spline, std::string node_variable_name) //forse non mi serve spline_holder
+    :TimeDiscretizationConstraint(T, dt, "baseAccConstraintValueLin-")
 {
-  base_linear_  = spline_holder.base_linear_;
-  base_angular_ = spline_holder.base_angular_;
-
-  SetRows(GetNumberOfNodes()*k6D);
+ node_variables_id_=node_variable_name;
+ spline_=spline;
+ node_bounds_.resize(k3D);
+ SetRows(spline_->GetPolynomialCount()*k3D);
 }
 
 void
-BaseAccConstraintRange::UpdateConstraintAtInstance (double t, int k,
+BaseAccConstraintRangeLin::UpdateConstraintAtInstance (double t, int k,
                                                   VectorXd& g) const
-{
-  auto com = base_linear_->GetPoint(t);
-  auto com1 = base_angular_->GetPoint(t);
-  g.middleRows(GetRow(k, LX), k3D) = com.a();
-  g.middleRows(GetRow(k, AX), k3D) = com1.a();
-  //Eigen::Matrix<int,3,1> l;
-  //l << 1,1,1;
-  //g.middleRows(GetRow(k, AX), k3D)=l.transpose();
+{ if (k<spline_->GetPolynomialCount())
+  {
+
+    auto com=spline_->GetPoint(t);
+    g.middleRows(GetRow(k, 0), k3D) = com.a();
+    std::cout<<"l' acc lin è "<<com.a()<<std::endl;
+  }
 }
 
 void
-BaseAccConstraintRange::UpdateBoundsAtInstance (double t, int k, VecBound& bounds) const
+BaseAccConstraintRangeLin::UpdateBoundsAtInstance (double t, int k, VecBound& bounds) const
 {
-  for (int dim=0; dim<node_bounds_.size(); ++dim)
-    bounds.at(GetRow(k,dim)) = (-100,100);
-}
+  if (k<spline_->GetPolynomialCount())
+  {for (int dim=0; dim<node_bounds_.size(); ++dim)
+   bounds.at(GetRow(k,dim)) = Bounds(-30,30);
+
+
+  }
+} //
 
 void
-BaseAccConstraintRange::UpdateJacobianAtInstance (double t, int k,
+BaseAccConstraintRangeLin::UpdateJacobianAtInstance (double t, int k,
                                                 std::string var_set,
                                                 Jacobian& jac) const
 {
-  int i=0;
-  if (var_set == id::base_ang_nodes)
-    //jac.middleRows(GetRow(k,AX), k3D) = Eigen::MatrixXd::Identity(3,3);
+ if (k<spline_->GetPolynomialCount())
+ {
 
-  {
+   //if (var_set==id::base_lin_nodes)
+   if (var_set ==node_variables_id_)
+    {
+      jac.middleRows(3*k,3)=spline_->GetJacobianWrtNodes(k,0.1, kAcc);
 
-     jac.coeffRef(i++,6)=1;
-     jac.coeffRef(i++,7)=1;
-     jac.coeffRef(i++,8)=1;
-    }
-
-  if (var_set == id::base_lin_nodes)
-  { jac.coeffRef(3+i++,6+9)=1;
-    jac.coeffRef(3+i++,7+9)=1;
-    jac.coeffRef(3+i++,8+9)=1;
-  }
+     }
+ }
 }
 int
-BaseAccConstraintRange::GetRow (int node, int dim) const
+BaseAccConstraintRangeLin::GetRow (int node, int dim) const
 {
   return node*node_bounds_.size() + dim;
 }

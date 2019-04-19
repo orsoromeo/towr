@@ -40,7 +40,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr/constraints/terrain_constraint.h>
 #include <towr/constraints/total_duration_constraint.h>
 #include <towr/constraints/spline_acc_constraint.h>
-#include <towr/constraints/base_acc_constraint_range.h>
+#include <towr/constraints/base_acc_constraint_range_lin.h>
+#include <towr/constraints/base_acc_constraint_range_ang.h>
 
 #include <towr/costs/node_cost.h>
 #include <towr/variables/nodes_variables_all.h>
@@ -214,15 +215,16 @@ NlpFormulation::GetConstraint (Parameters::ConstraintName name,
                            const SplineHolder& s) const
 {
   switch (name) {
-    case Parameters::Dynamic:                return MakeDynamicConstraint(s);
-    case Parameters::EndeffectorRom:         return MakeRangeOfMotionBoxConstraint(s);
-    case Parameters::BaseRom:                return MakeBaseRangeOfMotionConstraint(s);
-    case Parameters::TotalTime:              return MakeTotalTimeConstraint();
-    case Parameters::Terrain:                return MakeTerrainConstraint();
-    case Parameters::Force:                  return MakeForceConstraint();
-    case Parameters::Swing:                  return MakeSwingConstraint();
-    case Parameters::BaseAcc:                return MakeBaseAccConstraint(s);
-    case Parameters::BaseAccConstraintValue:   return MakeBaseAccConstraintValue(s);
+    case Parameters::Dynamic:                     return MakeDynamicConstraint(s);
+    case Parameters::EndeffectorRom:              return MakeRangeOfMotionBoxConstraint(s);
+    case Parameters::BaseRom:                     return MakeBaseRangeOfMotionConstraint(s);
+    case Parameters::TotalTime:                   return MakeTotalTimeConstraint();
+    case Parameters::Terrain:                     return MakeTerrainConstraint();
+    case Parameters::Force:                       return MakeForceConstraint();
+    case Parameters::Swing:                       return MakeSwingConstraint();
+    case Parameters::BaseAcc:                     return MakeBaseAccConstraint(s);
+    case Parameters::BaseAccConstraintValueLin:   return MakeBaseAccConstraintValueLin(s);
+    case Parameters::BaseAccConstraintValueAng:   return MakeBaseAccConstraintValueAng(s);
     default: throw std::runtime_error("constraint not defined!");
   }
 }
@@ -332,11 +334,24 @@ NlpFormulation::MakeBaseAccConstraint (const SplineHolder& s) const
   return constraints;
 }
 NlpFormulation::ContraintPtrVec
-NlpFormulation::MakeBaseAccConstraintValue (const SplineHolder& s) const
+NlpFormulation::MakeBaseAccConstraintValueLin (const SplineHolder& s) const
 {
-  return {std::make_shared<BaseAccConstraintRange>(params_.GetTotalTime(),
+  ContraintPtrVec constraints;
+  constraints.push_back(std::make_shared<BaseAccConstraintRangeLin>(params_.GetTotalTime(),
                                                  params_.dt_constraint_base_motion_,
-                                                   s)};
+                                                   s.base_linear_, id::base_lin_nodes));
+
+
+      return constraints;
+}
+NlpFormulation::ContraintPtrVec
+NlpFormulation::MakeBaseAccConstraintValueAng (const SplineHolder& s) const
+{
+  ContraintPtrVec constraints;
+  constraints.push_back(std::make_shared<BaseAccConstraintRangeAng>(params_.GetTotalTime(),
+                                                 params_.dt_constraint_base_motion_,
+                                                   s.base_angular_, id::base_ang_nodes));
+      return constraints;
 }
 NlpFormulation::ContraintPtrVec
 NlpFormulation::GetCosts() const

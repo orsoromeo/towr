@@ -30,7 +30,8 @@ add_library(${PROJECT_NAME} SHARED
   src/dynamic_model.cc
   src/single_rigid_body_dynamics.cc
   # constraints
-  src/base_acc_constraint_range.cc
+  src/base_acc_constraint_range_lin.cc
+  src/base_acc_constraint_range_ang.cc
   src/time_discretization_constraint.cc
   src/base_motion_constraint.cc
   src/terrain_constraint.cc
@@ -79,15 +80,15 @@ target_include_directories(${PROJECT_NAME}
 #############
 enable_testing()
 # example problem solved with IPOPT
-add_executable(${PROJECT_NAME}-example 
-  test/hopper_example.cc
-)
-target_link_libraries(${PROJECT_NAME}-example  
-  PRIVATE
-    ${PROJECT_NAME} 
-    ifopt::ifopt_ipopt
-)
-add_test(${PROJECT_NAME}-example ${PROJECT_NAME}-example)
+#add_executable(${PROJECT_NAME}-example 
+#  test/hopper_example.cc
+#)
+#target_link_libraries(${PROJECT_NAME}-example  
+#  PRIVATE
+#    ${PROJECT_NAME} 
+#    ifopt::ifopt_ipopt
+#)
+#add_test(${PROJECT_NAME}-example ${PROJECT_NAME}-example)
 
 # unit tests of costs/constraints
 find_package(GTest QUIET)
@@ -101,7 +102,8 @@ if (TARGET GTest::GTest) # only build when modern targets exists
   target_link_libraries(${PROJECT_NAME}-test
     PRIVATE
       ${PROJECT_NAME}
-      GTest::GTest GTest::Main ifopt::ifopt_ipopt
+      GTest::GTest GTest::Main
+      ifopt::ifopt_ipopt
   )
   add_test(${PROJECT_NAME}-test ${PROJECT_NAME}-test)
 endif()

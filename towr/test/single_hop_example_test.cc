@@ -17,7 +17,10 @@
 #include <towr/terrain/examples/height_map_examples.h>
 #include <towr/nlp_formulation.h>
 #include <towr/variables/variable_names.h>
-
+#include <towr/constraints/force_constraint.h>
+#include <towr/constraints/swing_constraint.h>
+#include <towr/constraints/base_acc_constraint_range_lin.h>
+#include <towr/constraints/base_acc_constraint_range_ang.h>
 #include <ifopt/ipopt_solver.h>
 #include <ifopt/composite.h>
 
@@ -36,24 +39,27 @@ TEST(TOWR, optimizeTrajectory){
         NlpFormulation formulation;
 	uint eeID = 0;
 
-        //test to apply only the sline acc constraint (not costs) to a monoped robot which has to do only one jump
+        //test to apply only the spline acc constraint (not costs) and swing constraint to a monoped robot which has to do only one jump
 
         formulation.terrain_ = std::make_shared<FlatGround>(0.0);
-        formulation.initial_base_.lin.at(kPos) << 10.0, 0.0, 0.5;
-        formulation.final_base_.lin.at(towr::kPos) << 11.0, 0.0, 0.5;
-        formulation.initial_ee_W_.push_back(Eigen::Vector3d(10.0, 0.0, 0.0));
+        formulation.initial_base_.lin.at(kPos) << 10.0, 0, 0.5;
+        formulation.final_base_.lin.at(towr::kPos) << 11.0, 0, 0.5;
+        formulation.initial_ee_W_.push_back(Eigen::Vector3d(10.0, 0, 0));
 
         // Kinematic limits and dynamic parameters of the hopper
         formulation.model_ = RobotModel(RobotModel::Monoped);
-
+        
         const std::vector<double> initial_durations = {0.3, 0.4, 0.4};
+        //const std::vector<double> initial_durations = {0.3, 0.4, 0.4,0.4,0.4,0.4,0.4};
 	bool is_first_phase_contact = true;
 	double min_phase_duration = 0.1;
 	double max_phase_duration = 2.0;
-	ifopt::Composite composite("composite", false);
 
-        formulation.params_.OptimizePhaseDurations();
+        formulation.params_.force_limit_in_normal_direction_=2000;
+        //formulation.params_.OptimizePhaseDurations();
+        //formulation.params_.dt_constraint_base_acc_=0.1; i have added it in the parameter class
         formulation.params_.ee_phase_durations_.push_back(initial_durations);
+        std::cout<<"total time is "<<formulation.params_.GetTotalTime()<<std::endl;
         formulation.params_.ee_in_contact_at_start_.push_back(is_first_phase_contact);
         PhaseDurations phase_durations(eeID,
                                                                 initial_durations,
@@ -61,56 +67,82 @@ TEST(TOWR, optimizeTrajectory){
                                                                 min_phase_duration,
                                                                 max_phase_duration);
 
-          //VariablePtrVec vars;
-          //SplineHolder spline_holder_;
-          // initial conditions
-          //auto base_motion = MakeBaseVariables();
-          //NlpFormulation base_motion;
-          //base_motion.MakeBaseVariables();
-          //vars.insert(vars.end(), base_motion.begin(), base_motion.end());
-          //
-          //auto ee_motion = MakeEndeffectorVariables();
-          //vars.insert(vars.end(), ee_motion.begin(), ee_motion.end());
-          //
-          //auto ee_force = MakeForceVariables();
-          //vars.insert(vars.end(), ee_force.begin(), ee_force.end());
-          //
-          //auto contact_schedule = MakeContactScheduleVariables();
-          //if (params_.OptimizeTimings()) {
-          //  vars.insert(vars.end(), contact_schedule.begin(), contact_schedule.end());
-          //}
-          // spline_holder_ = SplineHolder(base_motion.at(0), // linear
-          //                               base_motion.at(1), // angular
-          //                               params_.GetBasePolyDurations(),
-          //                               ee_motion,
-          //                               ee_force,
-          //                               contact_schedule,
-          //                             params_.OptimizeTimings());
           ifopt::Problem nlp;
           SplineHolder solution;
           for (auto c : formulation.GetVariableSets(solution))
             nlp.AddVariableSet(c);
           ContraintPtrVec constraints;
 
-          constraints.push_back(std::make_shared<SplineAccConstraint>
-                                (solution.base_linear_, id::base_lin_nodes));
+          //swing_constraint
+
+          constraints.push_back(std::make_shared<SwingConstraint>(id::EEMotionNodes(formulation.params_.GetEECount()-1)));
+
+          // force_constraint
+
+          //constraints.push_back(std::make_shared<ForceConstraint>(formulation.terrain_,
+          //                                                        formulation.params_.force_limit_in_normal_direction_,
+          //                                                        formulation.params_.GetEECount()-1));
+          //
+          //spline_acc_constraint
 
           constraints.push_back(std::make_shared<SplineAccConstraint>
-                                (solution.base_angular_, id::base_ang_nodes));
+                                (solution.base_linear_, id::base_lin_nodes)) ;
+
+          constraints.push_back(std::make_shared<SplineAccConstraint>
+                                (solution.base_angular_, id::base_ang_nodes)) ;
+
+          // base_acc_range_constraint
+
+          constraints.push_back(std::make_shared<BaseAccConstraintRangeLin>(formulation.params_.GetTotalTime(),
+                                                                            formulation.params_.dt_constraint_base_acc_,
+                                                                            solution.base_linear_, id::base_lin_nodes)) ;
+          constraints.push_back(std::make_shared<BaseAccConstraintRangeAng>(formulation.params_.GetTotalTime(),
+                                                                            formulation.params_.dt_constraint_base_acc_,
+                                                                            solution.base_angular_, id::base_ang_nodes)) ;
+
+
+          //constraint.push_back(std::make_shared<BaseMotionConstraint>(formulation.params_.GetTotalTime(),
+          //                                                            formulation.params_.dt_constraint_base_motion_,
+          //                                                            solution));
+          //
+          //constraint.push_back(std::make_shared<DynamicConstraint>(formulation.model_.dynamic_model_,
+          //                                                        formulation.params_.GetTotalTime(),
+          //                                                        formulation.params_.dt_constraint_dynamic_,
+          //                                                        solution));
+          //
+          //
+          //constraint.push_back(std::make_shared<RangeOfMotionConstraint>(formulation.model_.kinematic_model_,
+          //                                                         formulation.params_.GetTotalTime(),
+          //                                                         formulation.params_.dt_constraint_range_of_motion_,
+          //                                                         formulation.params_.GetEECount()-1,
+          //                                                         solution));
+          //
+          //NlpFormulation::ContraintPtrVec
+          //NlpFormulation::MakeTotalTimeConstraint () const
+          //{
+          //  ContraintPtrVec c;
+          //  double T = params_.GetTotalTime();
+          //
+          //  for (int ee=0; ee<params_.GetEECount(); ee++) {
+          //    auto duration_constraint = std::make_shared<TotalDurationConstraint>(T, ee);
+          //
+          //constraint.push_back(std::make_shared<TerrainConstraint>(formulation.terrain_, id::EEMotionNodes(ee));
 
           //devo lanciarlo per tutti gli elementi di constraints!
+
           for (auto l:constraints)
           nlp.AddConstraintSet(l);
-          //SplineAccConstraint AccConstraint_;
-          //AccConstraint_.FillJacobianBlock("splineacc",jac);
-          //AccConstraint_.GetBounds ();
+
+          //for (auto c : formulation.GetCosts())
+          //  nlp.AddCostSet(c);
+
           auto solver = std::make_shared<ifopt::IpoptSolver>();
-          //ifopt::IpoptSolver::Ptr solver;
+
           solver->SetOption("jacobian_approximation", "exact"); // "finite difference-values"
           solver->SetOption("max_cpu_time", 20.0);
-          //nlp.AddVariableSet(vars);
-          //nlp.AddConstraintSet(AccConstraint_);
+
           solver->Solve(nlp);
+
 
          //I copied this part from hopper_example
 
@@ -121,7 +153,9 @@ TEST(TOWR, optimizeTrajectory){
             cout << solution.base_linear_->GetPoint(t).p().transpose() << "\t[m]" << endl;
             cout << "Base linear vel x,y,z:   \t";
             cout << solution.base_linear_->GetPoint(t).v().transpose() << "\t[m/s]" << endl;
-            
+            cout << "Base linear acc x,y,z:   \t";
+            cout << solution.base_linear_->GetPoint(t).a().transpose() << "\t[m/s^2]" << endl;
+
             cout << "Base Euler roll, pitch, yaw:  \t";
             Eigen::Vector3d rad = solution.base_angular_->GetPoint(t).p();
             cout << (rad/M_PI*180).transpose() << "\t[deg]" << endl;
@@ -131,19 +165,20 @@ TEST(TOWR, optimizeTrajectory){
 
             cout << "Foot position x,y,z:          \t";
             cout << solution.ee_motion_.at(0)->GetPoint(t).p().transpose() << "\t[m]" << endl;
+            cout << "Foot velocity x,y,z:          \t";
+            cout << solution.ee_motion_.at(0)->GetPoint(t).v().transpose() << "\t[m/s]" << endl;
 
             cout << "Contact force x,y,z:          \t";
             cout << solution.ee_force_.at(0)->GetPoint(t).p().transpose() << "\t[N]" << endl;
+
+            cout << "Contact force dertivative x,y,z:          \t";
+            cout << solution.ee_force_.at(0)->GetPoint(t).v().transpose() << "\t[N/s]" << endl;
+
 
             bool contact = solution.phase_durations_.at(0)->IsContactPhase(t);
             std::string foot_in_contact = contact? "yes" : "no";
             cout << "Foot in contact:              \t" + foot_in_contact << endl;
 
-            //cout << "Phase durations:              \t" << endl;
-            //for (int j = 0; j<3; j++){
-            //cout<<solution.phase_durations_[j];
-            //cout << endl;
-            //} 
-            t += 0.05;
+            t += 0.1;
             }
 }

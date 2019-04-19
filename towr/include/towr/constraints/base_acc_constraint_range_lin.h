@@ -27,8 +27,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
-#ifndef TOWR_CONSTRAINTS_BASE_ACC_H_
-#define TOWR_CONSTRAINTS_BASE_ACC_H_
+#ifndef TOWR_CONSTRAINTS_BASE_ACC_CONSTRAINT_RANGE_LIN_H_
+#define TOWR_CONSTRAINTS_BASE_ACC_CONSTRAINT_RANGE_LIN_H_
 
 #include <towr/variables/spline_holder.h>
 #include <towr/variables/spline.h>
@@ -44,7 +44,7 @@ namespace towr {
  *
  * @ingroup Constraints
  */
-class BaseAccConstraintRange : public TimeDiscretizationConstraint {
+class BaseAccConstraintRangeLin : public TimeDiscretizationConstraint {
 public:
   /**
    * @brief Links the base variables and sets hardcoded bounds on the state.
@@ -52,8 +52,8 @@ public:
    * @param dt The discretization interval of the constraints.
    * @param spline_holder  Holds pointers to the base variables.
    */
-  BaseAccConstraintRange (double T, double dt, const SplineHolder& spline_holder);
-  virtual ~BaseAccConstraintRange () = default;
+  BaseAccConstraintRangeLin (double T, double dt, const NodeSpline::Ptr& spline, std::string name );
+  virtual ~BaseAccConstraintRangeLin () = default;
 
   void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
   void UpdateBoundsAtInstance (double t, int k, VecBound&) const override;
@@ -62,8 +62,9 @@ public:
 private:
   NodeSpline::Ptr base_linear_;
   NodeSpline::Ptr base_angular_;
-
-  VecBound node_bounds_;     ///< same bounds for each discretized node
+  NodeSpline::Ptr spline_;        ///< a spline comprised of polynomials
+  VecBound node_bounds_;
+  std::string node_variables_id_;
   int GetRow (int node, int dim) const;
 };
 
