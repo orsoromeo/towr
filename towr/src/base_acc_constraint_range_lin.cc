@@ -52,10 +52,9 @@ BaseAccConstraintRangeLin::UpdateConstraintAtInstance (double t, int k,
                                                   VectorXd& g) const
 { if (k<spline_->GetPolynomialCount())
   {
-
     auto com=spline_->GetPoint(t);
     g.middleRows(GetRow(k, 0), 4) =FillConstraint(com);
-    std::cout<<"l' acc lin è "<<com.a()<<std::endl;
+    //std::cout<<"l' acc lin è "<<com.a()<<std::endl;
   }
 }
 
@@ -63,10 +62,11 @@ void
 BaseAccConstraintRangeLin::UpdateBoundsAtInstance (double t, int k, VecBound& bounds) const
 {
   if (k<spline_->GetPolynomialCount())
-  {for (int dim=0; dim<node_bounds_.size(); ++dim)
-   bounds.at(GetRow(k,dim)) = Bounds(-30,30);
-
-
+  {
+   bounds.at(GetRow(k,0)) = ifopt::BoundGreaterZero;
+   bounds.at(GetRow(k,1)) = ifopt::BoundGreaterZero;
+   bounds.at(GetRow(k,2)) = ifopt::BoundSmallerZero;
+   bounds.at(GetRow(k,3)) = ifopt::BoundSmallerZero;
   }
 } //
 
@@ -83,7 +83,8 @@ BaseAccConstraintRangeLin::UpdateJacobianAtInstance (double t, int k,
     {
       jac.middleRows(4*k,4)=FillJacobian(spline_,k); //spline_->GetJacobianWrtNodes(k,0.1, kAcc);
 
-     }
+
+   }
  }
 }
 int
@@ -95,28 +96,27 @@ Eigen::VectorXd
 BaseAccConstraintRangeLin::FillConstraint (State com) const
 {
   VectorXd g;
-  int mu=1;
-  g(0)=com.a().x()+mu*com.a().z();
-  g(1)=com.a().y()+mu*com.a().z();
-  g(2)=com.a().x()-mu*com.a().z();
-  g(3)=com.a().y()-mu*com.a().z();
+  g.resize(4);
+  //double g[4];
+  double mu=1.0;
+  g(0)=com.a().x()+mu*(com.a().z()+9.80665);//>0
+  g(1)=com.a().y()+mu*(com.a().z()+9.80665);//>0
+  g(2)=com.a().x()-mu*(com.a().z()+9.80665);//<0. gravità
+  g(3)=com.a().y()-mu*(com.a().z()+9.80665);//<0
+  std::cout<<g.transpose()<<std::endl;
   return g;
 }
 NodeSpline::Jacobian
 BaseAccConstraintRangeLin::FillJacobian(NodeSpline::Ptr spline_,int k) const
 {
   auto jac1=spline_->GetJacobianWrtNodes(k,0.1, kAcc);
-  int mu=1;
-  Jacobian g=spline_->GetJacobianWrtNodes(k,0.1, kAcc);
-  std::cout<<"doing g"<<std::endl;
-  std::cout<<"g 0: "<<g.row(0)<<std::endl;
-  std::cout<<"jac1 0: "<<jac1.row(0)+mu*jac1.row(2)<<std::endl;
+  double mu=1.0;
+  Jacobian g=Jacobian(4, jac1.cols());
   g.row(0)=jac1.row(0)+mu*jac1.row(2);
   g.row(1)=jac1.row(1)+mu*jac1.row(2);
   g.row(2)=jac1.row(0)-mu*jac1.row(2);
-  std::cout<<" problem! "<<std::endl;
   g.row(3)=jac1.row(1)-mu*jac1.row(2);
-  std::cout<<"g done"<<std::endl;
+
   return g;
 
 }

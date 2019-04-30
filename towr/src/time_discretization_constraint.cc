@@ -66,13 +66,13 @@ TimeDiscretizationConstraint::GetNumberOfNodes () const
 TimeDiscretizationConstraint::VectorXd
 TimeDiscretizationConstraint::GetValues () const
 {
-
   VectorXd g = VectorXd::Zero(GetRows());
 
   int k = 0;
   for (double t : dts_)
   {
     UpdateConstraintAtInstance(t, k++, g);
+
   }
   return g;
 }
@@ -88,6 +88,7 @@ TimeDiscretizationConstraint::GetBounds () const
     UpdateBoundsAtInstance(t, k++, bounds);
 
   return bounds;
+  std::cout<<"ho trovato bounds "<<std::endl;
 }
 
 void
@@ -95,8 +96,9 @@ TimeDiscretizationConstraint::FillJacobianBlock (std::string var_set,
                                                   Jacobian& jac) const
 {
   int k = 0;
-  for (double t : dts_)
-    UpdateJacobianAtInstance(t, k++, var_set, jac);
+  for (double t : dts_){
+    UpdateJacobianAtInstance(t, k++, var_set, jac);}
+
 }
 
 } /* namespace towr */

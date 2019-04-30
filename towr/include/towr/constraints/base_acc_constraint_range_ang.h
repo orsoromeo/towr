@@ -60,6 +60,8 @@ public:
   void UpdateJacobianAtInstance(double t, int k, std::string, Jacobian&) const override;
 
 private:
+  NodeSpline::Jacobian FillJacobian(Jacobian jac1) const;
+  VectorXd FillConstraint (VectorXd com) const;
   NodeSpline::Ptr base_linear_;
   EulerConverter base_angular_;
   NodeSpline::Ptr spline_;        ///< a spline comprised of polynomials

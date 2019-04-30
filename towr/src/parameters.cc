@@ -57,10 +57,10 @@ Parameters::Parameters ()
   constraints_.push_back(Dynamic); //Ensures that the dynamic model is fullfilled at discrete times.
   constraints_.push_back(BaseAcc); // so accelerations don't jump between polynomials
   constraints_.push_back(EndeffectorRom); //Ensures that the range of motion is respected at discrete times.
-  //constraints_.push_back(Force); // ensures unilateral forces and inside the friction cone.
+  constraints_.push_back(Force); // ensures unilateral forces and inside the friction cone.
   constraints_.push_back(Swing); // creates smoother swing motions, not absolutely required.
-  constraints_.push_back(BaseAccConstraintValueLin);//accelerations are buonded
-  constraints_.push_back(BaseAccConstraintValueAng);//accelerations are buonded
+  //constraints_.push_back(BaseAccConstraintValueLin);//accelerations are buonded
+  //constraints_.push_back(BaseAccConstraintValueAng);//accelerations are buonded
 
   // optional costs to e.g penalize endeffector forces
   // costs_.push_back({ForcesCostID, 1.0}); weighed by 1.0 relative to other costs

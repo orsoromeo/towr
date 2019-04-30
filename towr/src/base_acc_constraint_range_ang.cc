@@ -47,18 +47,18 @@ BaseAccConstraintRangeAng::BaseAccConstraintRangeAng (double T, double dt,
  spline_=spline;
  node_variables_id_=node_variable_name;
  base_angular_ = EulerConverter(spline);
- node_bounds_.resize(k3D);
- SetRows(spline_->GetPolynomialCount()*k3D);
+ node_bounds_.resize(4);
+ SetRows(spline_->GetPolynomialCount()*4);
 }
 
 void
-BaseAccConstraintRangeAng::UpdateConstraintAtInstance (double t, int k,
+BaseAccConstraintRangeAng::UpdateConstraintAtInstance (double t,int k,
                                                   VectorXd& g) const
 { if (k<spline_->GetPolynomialCount())
   {
 
    auto com = base_angular_.GetAngularAccelerationInWorld(t);
-   g.middleRows(GetRow(k, AX), k3D) = com;
+   g.middleRows(GetRow(k, AX), 4) = FillConstraint(com);
    //std::cout<<"l' acc ang è "<<com<<std::endl;
 
   }
@@ -68,8 +68,10 @@ void
 BaseAccConstraintRangeAng::UpdateBoundsAtInstance (double t, int k, VecBound& bounds) const
 {
   if (k<spline_->GetPolynomialCount())
-  {for (int dim=0; dim<node_bounds_.size(); ++dim)
-   bounds.at(GetRow(k,dim)) = Bounds(-30,30);
+  { bounds.at(GetRow(k,0)) = ifopt::BoundGreaterZero;
+    bounds.at(GetRow(k,1)) = ifopt::BoundGreaterZero;
+    bounds.at(GetRow(k,2)) = ifopt::BoundSmallerZero;
+    bounds.at(GetRow(k,3)) = ifopt::BoundSmallerZero;
   }
 } //
 
@@ -82,48 +84,11 @@ BaseAccConstraintRangeAng::UpdateJacobianAtInstance (double t, int k,
  {
 
    //if (var_set==id::base_lin_nodes)
-   if (var_set ==node_variables_id_)
-    {
-    jac.middleRows(3*k,3)=base_angular_.GetDerivOfAngAccWrtEulerNodes(t);
-
-    //auto com=spline_->GetPoint(t);
-    //auto com1=spline_->GetPoint(t+1);
-    //accelerazione x
-    // jac.coeffRef(3*k,k+1)=sin(com.p().y())*cos(com.p().z())*com.v().x()/0.1;
-    // jac.coeffRef(3*k,k+2)=cos(com.p().z())*com.v().y()/0.1;
-    // jac.coeffRef(3*k,k+3)=-cos(com.p().y())*cos(com.p().z())/0.1;
-    // jac.coeffRef(3*k,k+4)=sin(com.p().z())/0.1;
-    // jac.coeffRef(3*k,k+7)=-sin(com1.p().y())*cos(com1.p().z())*com1.v().x()/0.1;
-    // jac.coeffRef(3*k,k+8)=-cos(com1.p().z())*com1.v().y()/0.1;
-    // jac.coeffRef(3*k,k+9)=cos(com1.p().y())*cos(com1.p().z())/0.1;
-    // jac.coeffRef(3*k,k+10)=-sin(com.p().z())/0.1;
-
-
-     // jac.coeffRef(3*k,6*k+3)=-1/0.1;
-     // jac.coeffRef(3*k,6*(k+1)+3)=1/0.1;
-     // jac.coeffRef(3*k+1,6*k+4)=-1/0.1;
-     // jac.coeffRef(3*k+1,6*(k+1)+4)=1/0.1;
-     // jac.coeffRef(3*k+2,6*k+5)=-1/0.1;
-     // jac.coeffRef(3*k+2,6*(k+1)+5)=1/0.1;
-
-    }
-
-  //if (var_set == id::base_ang_nodes)
-  // {
-  //     jac.coeffRef(3*k,6*k+3)=-1/0.1;
-  //     jac.coeffRef(3*k,6*(k+1)+3)=1/0.1;
-  //     jac.coeffRef(3*k+1,6*k+4)=-1/0.1;
-  //     jac.coeffRef(3*k+1,6*(k+1)+4)=1/0.1;
-  //     jac.coeffRef(3*k+2,6*k+5)=5;
-  //     jac.coeffRef(3*k+2,6*(k+1)+5)=1/0.1;
-  //
-  //     //
-  //  }
-
-//in realtà per il la parte angolare sto calcolando la derivata seconda degli angoli. Devo
-//quindi lanciare il componente solo una volta, passandogli tutta la spline perchè devo
-//differenziare i due jacobiani. Bisognerà cambiare anche il costruttore
-
+   //if (var_set ==node_variables_id_)
+   // {
+   //  auto jac1=spline_->base_angular_.GetDerivOfAngAccWrtEulerNodes(t);
+   //  jac.middleRows(3*k,3)=FillJacobian(jac1);
+   //}
  }
 }
 int
@@ -132,4 +97,30 @@ BaseAccConstraintRangeAng::GetRow (int node, int dim) const
   return node*node_bounds_.size() + dim;
 }
 
+Eigen::VectorXd
+BaseAccConstraintRangeAng::FillConstraint (Eigen::VectorXd com) const
+{
+  Eigen::VectorXd g;
+  g.resize(4);
+  //double g[4];
+  double mu=1.0;
+  g(0)=com(0)+mu*com(2);//>0
+  g(1)=com(1)+mu*com(2);//>0
+  g(2)=com(0)-mu*com(2);//<0
+  g(3)=com(1)-mu*com(2);//<0
+  return g;
+}
+
+NodeSpline::Jacobian
+BaseAccConstraintRangeAng::FillJacobian(Jacobian jac1) const
+{
+  double mu=1.0;
+  NodeSpline::Jacobian g=NodeSpline::Jacobian(4, jac1.cols());
+  g.row(0)=jac1.row(0)+mu*jac1.row(2);
+  g.row(1)=jac1.row(1)+mu*jac1.row(2);
+  g.row(2)=jac1.row(0)-mu*jac1.row(2);
+  g.row(3)=jac1.row(1)-mu*jac1.row(2);
+
+  return g;
+}
 } /* namespace towr */
