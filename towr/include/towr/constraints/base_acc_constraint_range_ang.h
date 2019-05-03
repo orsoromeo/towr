@@ -52,16 +52,17 @@ public:
    * @param dt The discretization interval of the constraints.
    * @param spline_holder  Holds pointers to the base variables.
    */
-  BaseAccConstraintRangeAng (double T, double dt, const NodeSpline::Ptr& spline, std::string name );
+  BaseAccConstraintRangeAng (double T, double dt, const NodeSpline::Ptr& angular, const NodeSpline::Ptr& linear, std::string name );
   virtual ~BaseAccConstraintRangeAng () = default;
-
+  using Jac = Eigen::SparseMatrix<double, Eigen::RowMajor>;
   void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
   void UpdateBoundsAtInstance (double t, int k, VecBound&) const override;
   void UpdateJacobianAtInstance(double t, int k, std::string, Jacobian&) const override;
 
 private:
-  NodeSpline::Jacobian FillJacobian(Jacobian jac1) const;
-  VectorXd FillConstraint (VectorXd com) const;
+  Eigen::Matrix3d I_b;
+  Eigen::VectorXd FillConstraint (Eigen::VectorXd acc, Jac I_w, State r) const;
+  NodeSpline::Jacobian FillJacobian(Eigen::Matrix3d w_R_b, Eigen::Vector3d acc, int k , double t) const;
   NodeSpline::Ptr base_linear_;
   EulerConverter base_angular_;
   NodeSpline::Ptr spline_;        ///< a spline comprised of polynomials

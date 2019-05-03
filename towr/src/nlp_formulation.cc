@@ -350,7 +350,7 @@ NlpFormulation::MakeBaseAccConstraintValueAng (const SplineHolder& s) const
   ContraintPtrVec constraints;
   constraints.push_back(std::make_shared<BaseAccConstraintRangeAng>(params_.GetTotalTime(),
                                                  params_.dt_constraint_base_motion_,
-                                                   s.base_angular_, id::base_ang_nodes));
+                                                   s.base_angular_, s.base_angular_ , id::base_ang_nodes));
       return constraints;
 }
 NlpFormulation::ContraintPtrVec

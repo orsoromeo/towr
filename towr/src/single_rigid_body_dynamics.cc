@@ -29,6 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <towr/models/single_rigid_body_dynamics.h>
 #include <towr/variables/cartesian_dimensions.h>
+#include <iostream>
 
 namespace towr {
 
@@ -131,6 +132,7 @@ SingleRigidBodyDynamics::GetJacobianWrtBaseAng (const EulerConverter& base_euler
   Vector3d v11 = I_b*w_R_b_.transpose()*omega_dot_;
   Jac jac11 = base_euler.DerivOfRotVecMult(t, v11, false);
 
+
   // 2nd term of product rule (derivative of R^T)
   Jac jac12 = w_R_b_.sparseView()*I_b*base_euler.DerivOfRotVecMult(t, omega_dot_, true);
 
@@ -138,6 +140,7 @@ SingleRigidBodyDynamics::GetJacobianWrtBaseAng (const EulerConverter& base_euler
   Jac jac_ang_acc = base_euler.GetDerivOfAngAccWrtEulerNodes(t);
   Jac jac13 = I_w * jac_ang_acc;
   Jac jac1 = jac11 + jac12 + jac13;
+
 
 
   // Derivative of w x Iw
@@ -155,7 +158,7 @@ SingleRigidBodyDynamics::GetJacobianWrtBaseAng (const EulerConverter& base_euler
 
   Jac jac2 = Cross(omega_)*(jac21+jac22+jac23) - Cross(I_w*omega_)*jac_ang_vel;
 
-
+ 
   // Combine the two to get sensitivity to I_w*w + w x (I_w*w)
   int n = jac_ang_vel.cols();
   Jac jac(k6D, n);

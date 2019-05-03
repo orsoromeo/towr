@@ -28,7 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include <towr/constraints/base_acc_constraint_range_ang.h>
-
+#include <towr/models/single_rigid_body_dynamics.h>
 #include <towr/variables/euler_converter.h>
 #include <towr/variables/variable_names.h>
 #include <towr/variables/cartesian_dimensions.h>
@@ -41,34 +41,47 @@ namespace towr {
 
 
 BaseAccConstraintRangeAng::BaseAccConstraintRangeAng (double T, double dt,
-                                            const NodeSpline::Ptr& spline, std::string node_variable_name) //forse non mi serve spline_holder
+                                            const NodeSpline::Ptr& angular, const NodeSpline::Ptr& linear, std::string node_variable_name) //forse non mi serve spline_holder
     :TimeDiscretizationConstraint(T, dt, "baseAccConstraintValueAng-")
+
 {
- spline_=spline;
+
+ spline_=angular;
+ base_linear_=linear;
  node_variables_id_=node_variable_name;
- base_angular_ = EulerConverter(spline);
+ base_angular_ = EulerConverter(angular);
  node_bounds_.resize(4);
- SetRows(spline_->GetPolynomialCount()*4);
+ SetRows((spline_->GetPolynomialCount()+1)*4);
+
+ I_b << 1.2, 0.0, 0.2,
+        0.0, 5.5, 0.0,
+        0.2, 0.0, 6.0;
+
 }
 
 void
 BaseAccConstraintRangeAng::UpdateConstraintAtInstance (double t,int k,
                                                   VectorXd& g) const
-{ if (k<spline_->GetPolynomialCount())
-  {
+{
 
-   auto com = base_angular_.GetAngularAccelerationInWorld(t);
-   g.middleRows(GetRow(k, AX), 4) = FillConstraint(com);
-   //std::cout<<"l' acc ang è "<<com<<std::endl;
+  if (k<spline_->GetPolynomialCount()+1)
+  {
+   Eigen::Vector3d acc= base_angular_.GetAngularAccelerationInWorld(t);
+   Eigen::Matrix3d w_R_b = base_angular_.GetRotationMatrixBaseToWorld(t);
+   Eigen::Matrix3d I_w1 = w_R_b * I_b* w_R_b.transpose();
+   Jac I_w=I_w1.sparseView();
+   State r=base_linear_->GetPoint(t);
+   g.middleRows(GetRow(k,0), 4) = FillConstraint(acc, I_w, r);
+
 
   }
 }
-
 void
 BaseAccConstraintRangeAng::UpdateBoundsAtInstance (double t, int k, VecBound& bounds) const
 {
-  if (k<spline_->GetPolynomialCount())
-  { bounds.at(GetRow(k,0)) = ifopt::BoundGreaterZero;
+  if (k<spline_->GetPolynomialCount()+1)
+  {
+    bounds.at(GetRow(k,0)) = ifopt::BoundGreaterZero;
     bounds.at(GetRow(k,1)) = ifopt::BoundGreaterZero;
     bounds.at(GetRow(k,2)) = ifopt::BoundSmallerZero;
     bounds.at(GetRow(k,3)) = ifopt::BoundSmallerZero;
@@ -80,15 +93,17 @@ BaseAccConstraintRangeAng::UpdateJacobianAtInstance (double t, int k,
                                                 std::string var_set,
                                                 Jacobian& jac) const
 {
- if (k<spline_->GetPolynomialCount())
- {
 
-   //if (var_set==id::base_lin_nodes)
-   //if (var_set ==node_variables_id_)
-   // {
-   //  auto jac1=spline_->base_angular_.GetDerivOfAngAccWrtEulerNodes(t);
-   //  jac.middleRows(3*k,3)=FillJacobian(jac1);
-   //}
+ if (k<spline_->GetPolynomialCount()+1)
+ {
+   if (var_set ==node_variables_id_)
+ {
+   Eigen::Vector3d acc= base_angular_.GetAngularAccelerationInWorld(t);
+   Eigen::Matrix3d w_R_b_ = base_angular_.GetRotationMatrixBaseToWorld(t);
+   jac.middleRows(4*k, 4)= FillJacobian(w_R_b_,acc, k,t );
+   //std::cout<<"ang "<<std::endl;
+   //std::cout<<jac<<std::endl;
+ }
  }
 }
 int
@@ -98,29 +113,61 @@ BaseAccConstraintRangeAng::GetRow (int node, int dim) const
 }
 
 Eigen::VectorXd
-BaseAccConstraintRangeAng::FillConstraint (Eigen::VectorXd com) const
+BaseAccConstraintRangeAng::FillConstraint (Eigen::VectorXd acc, Jac I_w, State r) const
 {
+
+  auto Iwacc=I_w*acc;
+  //Eigen::Vector3d grav=(0.0, 0.0, -9.81);
+  Eigen::Vector3d ra=r.a();
+  auto rmg=ra.cross(20*Eigen::Vector3d(0.0, 0.0, -9.81));
+  Eigen::Vector3d com=Iwacc-rmg;
   Eigen::VectorXd g;
   g.resize(4);
   //double g[4];
-  double mu=1.0;
-  g(0)=com(0)+mu*com(2);//>0
-  g(1)=com(1)+mu*com(2);//>0
-  g(2)=com(0)-mu*com(2);//<0
-  g(3)=com(1)-mu*com(2);//<0
+  double mu=4.0;
+  g(0)=com(0)+mu*com(2);//>0    mu1_lx(p1, p2, p3, p4)*w_lx + mu1_ly(..)*w_ly + mu1_lz(..)*w_lz + mu1_ax(..)*w_ax + mu1_ay(..)*w_ay + mu1_az(..)*w_az
+  g(1)=com(1)+mu*com(2);//>0    mu1*x + mu2*y + mu3*z
+  g(2)=com(0)-mu*com(2);//<0    mu1*x + mu2*y + mu3*z
+  g(3)=com(1)-mu*com(2);//<0    mu1*x + mu2*y + mu3*z
   return g;
 }
 
 NodeSpline::Jacobian
-BaseAccConstraintRangeAng::FillJacobian(Jacobian jac1) const
+BaseAccConstraintRangeAng::FillJacobian(Eigen::Matrix3d w_R_b_, Eigen::Vector3d acc, int k, double t ) const
 {
-  double mu=1.0;
-  NodeSpline::Jacobian g=NodeSpline::Jacobian(4, jac1.cols());
-  g.row(0)=jac1.row(0)+mu*jac1.row(2);
-  g.row(1)=jac1.row(1)+mu*jac1.row(2);
-  g.row(2)=jac1.row(0)-mu*jac1.row(2);
-  g.row(3)=jac1.row(1)-mu*jac1.row(2);
+  Jac I_b_sparse=I_b.sparseView();
+  Jac I_w = w_R_b_.sparseView() * I_b_sparse * w_R_b_.transpose().sparseView();
 
+  // 1st term of product rule (derivative of R)
+  Eigen::Vector3d v11 = I_b_sparse*w_R_b_.transpose()*acc;
+  
+  Jac jac11 = base_angular_.DerivOfRotVecMult(t, v11, false);
+
+  // 2nd term of product rule (derivative of R^T)
+  Jac jac12 = w_R_b_.sparseView()*I_b_sparse*base_angular_.DerivOfRotVecMult(t, acc, true);
+
+  // 3rd term of product rule (derivative of wd)
+  Jac jac_ang_acc = base_angular_.GetDerivOfAngAccWrtEulerNodes(t);
+  Jac jac13 = I_w * jac_ang_acc;
+  
+
+  Jac jac1 = jac11 + jac12 + jac13;
+
+  //Derivative of rxmg
+  Jac jac2= Jac(3, jac1.cols());
+  jac2.coeffRef(0,6*k+2)=200;
+  jac2.coeffRef(1,6*k+1)=-200;
+
+  Jac total_jac=jac1+jac2;
+
+
+  double mu=4.0;
+  NodeSpline::Jacobian g=NodeSpline::Jacobian(4, total_jac.cols());
+  g.row(0)=total_jac.row(0)+mu*total_jac.row(2);
+  g.row(1)=total_jac.row(1)+mu*total_jac.row(2);
+  g.row(2)=total_jac.row(0)-mu*total_jac.row(2);
+  g.row(3)=total_jac.row(1)-mu*total_jac.row(2);
+ 
   return g;
 }
 } /* namespace towr */

@@ -48,6 +48,7 @@ DynamicConstraint::DynamicConstraint (const DynamicModel::Ptr& m,
   ee_motion_    = spline_holder.ee_motion_;
 
   SetRows(GetNumberOfNodes()*k6D);
+
 }
 
 int
@@ -114,6 +115,7 @@ DynamicConstraint::UpdateJacobianAtInstance(double t, int k, std::string var_set
   }
 
   jac.middleRows(GetRow(k,AX), k6D) = jac_model;
+  
 }
 
 void

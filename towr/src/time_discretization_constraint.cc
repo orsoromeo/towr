@@ -88,7 +88,7 @@ TimeDiscretizationConstraint::GetBounds () const
     UpdateBoundsAtInstance(t, k++, bounds);
 
   return bounds;
-  std::cout<<"ho trovato bounds "<<std::endl;
+
 }
 
 void
