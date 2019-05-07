@@ -28,6 +28,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include <towr/constraints/base_acc_constraint_range_lin.h>
+#include <towr/constraints/dynamic_constraint.h>
+#include <towr/models/single_rigid_body_dynamics.h>
+#include <towr/models/dynamic_model.h>
 #include <towr/variables/variable_names.h>
 #include <towr/variables/cartesian_dimensions.h>
 #include <towr/variables/spline_holder.h>
@@ -37,14 +40,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace towr {
 
 
-BaseAccConstraintRangeLin::BaseAccConstraintRangeLin (double T, double dt,
-                                            const NodeSpline::Ptr& spline, std::string node_variable_name) //forse non mi serve spline_holder
+BaseAccConstraintRangeLin::BaseAccConstraintRangeLin (const DynamicModel::Ptr& model, double T, double dt,
+                                                      const NodeSpline::Ptr& spline, std::string node_variable_name)
     :TimeDiscretizationConstraint(T, dt, "baseAccConstraintValueLin-")
 {
+ model_=model;
  node_variables_id_=node_variable_name;
  spline_=spline;
  node_bounds_.resize(4);
- SetRows(spline_->GetPolynomialCount()*4);
+ NumberNodes_=(spline_->GetPolynomialCount()+1);
+ SetRows(NumberNodes_*4);
 
 }
 
@@ -53,7 +58,7 @@ BaseAccConstraintRangeLin::UpdateConstraintAtInstance (double t, int k,
                                                   VectorXd& g) const
 {
 
-  if (k<spline_->GetPolynomialCount())
+  if (k<NumberNodes_)
   {
     auto com=spline_->GetPoint(t);
     g.middleRows(GetRow(k, 0), 4) =FillConstraint(com);
@@ -64,7 +69,7 @@ BaseAccConstraintRangeLin::UpdateConstraintAtInstance (double t, int k,
 void
 BaseAccConstraintRangeLin::UpdateBoundsAtInstance (double t, int k, VecBound& bounds) const
 {
-  if (k<spline_->GetPolynomialCount())
+  if (k<NumberNodes_)
   {
    bounds.at(GetRow(k,0)) = ifopt::BoundGreaterZero;
    bounds.at(GetRow(k,1)) = ifopt::BoundGreaterZero;
@@ -79,13 +84,16 @@ BaseAccConstraintRangeLin::UpdateJacobianAtInstance (double t, int k,
                                                 Jacobian& jac) const
 {
 
-   if (k<spline_->GetPolynomialCount())
+   if (k<NumberNodes_)
    {
 
    //if (var_set==id::base_lin_nodes)
    if (var_set ==node_variables_id_)
     {
-      jac.middleRows(4*k,4)=FillJacobian(spline_,k); //spline_->GetJacobianWrtNodes(k,0.1, kAcc);
+
+      jac.middleRows(4*k,4)=FillJacobian(spline_,k);
+
+      //spline_->GetJacobianWrtNodes(k,0.1, kAcc);
       //std::cout<<"lin "<<std::endl;
       //std::cout<<jac<<std::endl;
 
@@ -104,16 +112,28 @@ BaseAccConstraintRangeLin::FillConstraint (State com) const
   g.resize(4);
   //double g[4];
   double mu=10.0;
-  g(0)=com.a().x()+mu*(com.a().z()+9.80665);//>0
-  g(1)=com.a().y()+mu*(com.a().z()+9.80665);//>0
-  g(2)=com.a().x()-mu*(com.a().z()+9.80665);//<0. gravità
-  g(3)=com.a().y()-mu*(com.a().z()+9.80665);//<0
+  g(0)=com.a().x()+mu*(com.a().z()+model_->g());//>0
+  g(1)=com.a().y()+mu*(com.a().z()+model_->g());//>0
+  g(2)=com.a().x()-mu*(com.a().z()+model_->g());//<0. gravità
+  g(3)=com.a().y()-mu*(com.a().z()+model_->g());//<0
   return g;
 }
 NodeSpline::Jacobian
 BaseAccConstraintRangeLin::FillJacobian(NodeSpline::Ptr spline_,int k) const
 {
-  auto jac1=spline_->GetJacobianWrtNodes(k,0.1, kAcc);
+  double a;
+  int pol;
+  if (k==0)
+      {
+        a=0;
+        pol=k;
+      }
+  else
+       { a=0.1;
+         pol=k-1;
+       }
+  auto jac1=spline_->GetJacobianWrtNodes(pol,a, kAcc);
+
   double mu=10.0;
   Jacobian g=Jacobian(4, jac1.cols());
   g.row(0)=jac1.row(0)+mu*jac1.row(2);

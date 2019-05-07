@@ -33,6 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr/variables/spline_holder.h>
 #include <towr/variables/spline.h>
 
+#include <towr/models/dynamic_model.h>
+
 #include "time_discretization_constraint.h"
 
 namespace towr {
@@ -52,13 +54,16 @@ public:
    * @param dt The discretization interval of the constraints.
    * @param spline_holder  Holds pointers to the base variables.
    */
-  BaseAccConstraintRangeLin (double T, double dt, const NodeSpline::Ptr& spline, std::string name );
+  BaseAccConstraintRangeLin (const DynamicModel::Ptr &model, double T, double dt, const NodeSpline::Ptr& spline, std::string name );
   virtual ~BaseAccConstraintRangeLin () = default;
 
   void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
   void UpdateBoundsAtInstance (double t, int k, VecBound&) const override;
   void UpdateJacobianAtInstance(double t, int k, std::string, Jacobian&) const override;
 private:
+  int NumberNodes_;
+  mutable DynamicModel::Ptr model_;
+  double g_;
   VectorXd FillConstraint (State com) const;
   NodeSpline::Jacobian FillJacobian(NodeSpline::Ptr spline_, int k) const;
   NodeSpline::Ptr base_linear_;

@@ -33,6 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr/variables/spline_holder.h>
 #include <towr/variables/spline.h>
 #include <towr/variables/euler_converter.h>
+
+#include <towr/models/dynamic_model.h>
+
 #include "time_discretization_constraint.h"
 
 namespace towr {
@@ -52,23 +55,28 @@ public:
    * @param dt The discretization interval of the constraints.
    * @param spline_holder  Holds pointers to the base variables.
    */
-  BaseAccConstraintRangeAng (double T, double dt, const NodeSpline::Ptr& angular, const NodeSpline::Ptr& linear, std::string name );
+  BaseAccConstraintRangeAng (const towr::DynamicModel::Ptr& model, double T, double dt, const NodeSpline::Ptr& angular, const NodeSpline::Ptr& linear, std::string name );
   virtual ~BaseAccConstraintRangeAng () = default;
   using Jac = Eigen::SparseMatrix<double, Eigen::RowMajor>;
   void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
   void UpdateBoundsAtInstance (double t, int k, VecBound&) const override;
-  void UpdateJacobianAtInstance(double t, int k, std::string, Jacobian&) const override;
-
+  void UpdateJacobianAtInstance(double t, int k, std::string, Jacobian& jac) const override;
 private:
-  Eigen::Matrix3d I_b;
-  Eigen::VectorXd FillConstraint (Eigen::VectorXd acc, Jac I_w, State r) const;
-  NodeSpline::Jacobian FillJacobian(Eigen::Matrix3d w_R_b, Eigen::Vector3d acc, int k , double t) const;
+  mutable DynamicModel::Ptr model_;
+  double m_;
+  double g_;
+  Eigen::SparseMatrix<double, Eigen::RowMajor> I_b;
   NodeSpline::Ptr base_linear_;
   EulerConverter base_angular_;
-  NodeSpline::Ptr spline_;        ///< a spline comprised of polynomials
+  NodeSpline::Ptr spline_;
   VecBound node_bounds_;
   std::string node_variables_id_;
+
   int GetRow (int node, int dim) const;
+  Eigen::VectorXd FillConstraint (Eigen::VectorXd acc, Jac I_w, State r) const;
+  NodeSpline::Jacobian FillJacobian(Eigen::Matrix3d w_R_b, Eigen::Vector3d acc, int k , double t) const;
+  Jac DerivativeOfrxma(double t) const;
+
 };
 
 } /* namespace towr */

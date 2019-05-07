@@ -53,7 +53,7 @@ TEST(TOWR, optimizeTrajectory){
         formulation.terrain_ = std::make_shared<FlatGround>(0.0);
         formulation.initial_base_.lin.at(kPos) << 10.0, 0, 0.5;
         formulation.final_base_.lin.at(towr::kPos) << 10.2, 0, 0.5;
-        formulation.final_base_.ang.at(towr::kPos) << 2, 0, 0;
+        formulation.final_base_.ang.at(towr::kPos) << 0, 0, 0;
         formulation.initial_ee_W_.push_back(Eigen::Vector3d(10.0, 0, 0));
 
         // Kinematic limits and dynamic parameters of the hopper
@@ -66,7 +66,7 @@ TEST(TOWR, optimizeTrajectory){
 	double max_phase_duration = 2.0;
 
         formulation.params_.force_limit_in_normal_direction_=2000;
-        formulation.params_.OptimizePhaseDurations();
+
         //formulation.params_.dt_constraint_base_acc_=0.1; i have added it in the parameter class
         formulation.params_.ee_phase_durations_.push_back(initial_durations);
         formulation.params_.ee_in_contact_at_start_.push_back(is_first_phase_contact);
@@ -86,8 +86,8 @@ TEST(TOWR, optimizeTrajectory){
           int ee_count = formulation.params_.GetEECount()-1;
 
           double tot_time = formulation.params_.GetTotalTime();
-
-          constraints.push_back(std::make_shared<TotalDurationConstraint>(tot_time, ee_count));
+          formulation.params_.OptimizePhaseDurations();
+          //constraints.push_back(std::make_shared<TotalDurationConstraint>(tot_time, ee_count));
           constraints.push_back(std::make_shared<TerrainConstraint>(formulation.terrain_, ee_motion_name));
 
           //swing_constraint
@@ -114,25 +114,28 @@ TEST(TOWR, optimizeTrajectory){
           // base_acc_range_constraint
 
 
-          constraints.push_back(std::make_shared<BaseAccConstraintRangeLin>(formulation.params_.GetTotalTime(),
+          constraints.push_back(std::make_shared<BaseAccConstraintRangeLin>(formulation.model_.dynamic_model_,
+                                                                            formulation.params_.GetTotalTime(),
                                                                             formulation.params_.dt_constraint_base_acc_,
                                                                             solution.base_linear_, id::base_lin_nodes)) ;
 
-          constraints.push_back(std::make_shared<BaseAccConstraintRangeAng>(formulation.params_.GetTotalTime(),
-                                                                            formulation.params_.dt_constraint_base_acc_,
-                                                                            solution.base_angular_, solution.base_linear_,
-                                                                            id::base_ang_nodes)) ;
-
+          //constraints.push_back(std::make_shared<BaseAccConstraintRangeAng>(formulation.model_.dynamic_model_,
+          //                                                                  formulation.params_.GetTotalTime(),
+          //                                                                  formulation.params_.dt_constraint_base_acc_,
+          //                                                                  solution.base_angular_, solution.base_linear_,
+          //                                                                  id::base_ang_nodes)) ;
+          //
           //constraints.push_back(std::make_shared<BaseMotionConstraint>(formulation.params_.GetTotalTime(),
+          //                                                              formulation.params_.GetTotalTime(),
           //                                                            formulation.params_.dt_constraint_base_motion_,
           //                                                            solution));
           //BASE MOTION SEMPRE COMMENTATO!
 
           constraints.push_back(std::make_shared<RangeOfMotionConstraint>(formulation.model_.kinematic_model_,
-                                                                   formulation.params_.GetTotalTime(),
-                                                                   formulation.params_.dt_constraint_range_of_motion_,
-                                                                   ee_count,
-                                                                   solution));
+                                                                  formulation.params_.GetTotalTime(),
+                                                                  formulation.params_.dt_constraint_range_of_motion_,
+                                                                  ee_count,
+                                                                  solution));
 
 
 
@@ -148,6 +151,7 @@ TEST(TOWR, optimizeTrajectory){
 
           solver->SetOption("jacobian_approximation", "exact"); // "finite difference-values"
           solver->SetOption("max_cpu_time", 20.0);
+
 
           solver->Solve(nlp);
 

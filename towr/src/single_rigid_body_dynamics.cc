@@ -193,5 +193,9 @@ SingleRigidBodyDynamics::GetJacobianWrtEEPos (const Jac& jac_ee_pos, EE ee) cons
   // linear dynamics don't depend on endeffector position.
   return jac;
 }
-
+Eigen::SparseMatrix<double, Eigen::RowMajor>
+SingleRigidBodyDynamics::ReturnInertia() const
+{
+  return I_b;
+}
 } /* namespace towr */

@@ -138,6 +138,7 @@ public:
    */
   virtual Jac GetJacobianWrtEEPos(const Jac& ee_pos, EE ee) const = 0;
 
+  virtual Eigen::SparseMatrix<double, Eigen::RowMajor> ReturnInertia() const=0;
   /**
    * @returns The gravity acceleration [m/s^2] (positive)
    */

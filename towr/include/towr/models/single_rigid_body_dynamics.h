@@ -87,7 +87,7 @@ public:
   Jac GetJacobianWrtForce(const Jac& jac_force, EE) const override;
 
   Jac GetJacobianWrtEEPos(const Jac& jac_ee_pos, EE) const override;
-
+  Eigen::SparseMatrix<double, Eigen::RowMajor> ReturnInertia() const override;
 private:
   /** Inertia of entire robot around the CoM expressed in a frame anchored
    *  in the base.
