@@ -32,8 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <towr/variables/spline_holder.h>
 #include <towr/variables/spline.h>
-
+#include <towr/variables/nodes_variables_phase_based.h>
+#include <towr/terrain/height_map.h>
 #include <towr/models/dynamic_model.h>
+
+#include <iostream>
 
 #include "time_discretization_constraint.h"
 
@@ -54,23 +57,38 @@ public:
    * @param dt The discretization interval of the constraints.
    * @param spline_holder  Holds pointers to the base variables.
    */
-  BaseAccConstraintRangeLin (const DynamicModel::Ptr &model, double T, double dt, const NodeSpline::Ptr& spline, std::string name );
+  BaseAccConstraintRangeLin (const DynamicModel::Ptr &model, double T, double dt, const NodeSpline::Ptr& spline, std::string name,HeightMap::Ptr terrain, const SplineHolder& spline_holder );
   virtual ~BaseAccConstraintRangeLin () = default;
 
   void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
   void UpdateBoundsAtInstance (double t, int k, VecBound&) const override;
   void UpdateJacobianAtInstance(double t, int k, std::string, Jacobian&) const override;
+  std::vector<NodeSpline::Ptr> ee_motion_in_touch_;
 private:
   int NumberNodes_;
   mutable DynamicModel::Ptr model_;
   double g_;
-  VectorXd FillConstraint (State com) const;
-  NodeSpline::Jacobian FillJacobian(NodeSpline::Ptr spline_, int k) const;
   NodeSpline::Ptr base_linear_;
   NodeSpline::Ptr base_angular_;
   NodeSpline::Ptr spline_;        ///< a spline comprised of polynomials
   VecBound node_bounds_;
   std::string node_variables_id_;
+  HeightMap::Ptr terrain_;
+  std::vector<NodeSpline::Ptr> ee_motion_;
+  NodesVariablesPhaseBased::Ptr ee_force_;
+  double mu_;
+  Eigen::MatrixXd  e1;
+  Eigen::MatrixXd  e2;
+  Eigen::MatrixXd  e3;
+  Eigen::MatrixXd  e4;
+  NodeSpline::Jacobian FillJacobian(NodeSpline::Ptr spline_, int k) const;
+  VectorXd FillConstraint (State com) const;
+  Eigen::MatrixXd ReturnNormalTerrain (double t);
+  Eigen::MatrixXd ReturnTangentTerrain(double t);
+  Eigen::Matrix3d RotationMatrix (Eigen::Vector3d t, double angle) const;
+  Eigen::Vector3d GetEdge (Eigen::Matrix3d M, Eigen::Vector3d n) const;
+  void GetAllEdges (double t);
+  int GetNumberOfFeetInTouch (double t);
   int GetRow (int node, int dim) const;
 };
 

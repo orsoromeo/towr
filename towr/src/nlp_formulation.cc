@@ -338,8 +338,10 @@ NlpFormulation::MakeBaseAccConstraintValueLin (const SplineHolder& s) const
 {
   ContraintPtrVec constraints;
   constraints.push_back(std::make_shared<BaseAccConstraintRangeLin>(model_.dynamic_model_, params_.GetTotalTime(),
-                                                 params_.dt_constraint_base_motion_,
-                                                   s.base_linear_, id::base_lin_nodes));
+                                                                    params_.dt_constraint_base_motion_,
+                                                                    s.base_linear_, id::base_lin_nodes,
+                                                                    terrain_,
+                                                                    s));
 
 
       return constraints;

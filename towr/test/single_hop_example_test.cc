@@ -117,7 +117,9 @@ TEST(TOWR, optimizeTrajectory){
           constraints.push_back(std::make_shared<BaseAccConstraintRangeLin>(formulation.model_.dynamic_model_,
                                                                             formulation.params_.GetTotalTime(),
                                                                             formulation.params_.dt_constraint_base_acc_,
-                                                                            solution.base_linear_, id::base_lin_nodes)) ;
+                                                                            solution.base_linear_, id::base_lin_nodes,
+                                                                            formulation.terrain_,
+                                                                            solution)) ;
 
           //constraints.push_back(std::make_shared<BaseAccConstraintRangeAng>(formulation.model_.dynamic_model_,
           //                                                                  formulation.params_.GetTotalTime(),

@@ -192,5 +192,6 @@ BaseAccConstraintRangeAng::DerivativeOfrxma(double t) const
   jac3.row(2)=p.x()*da.row(1)+dr.row(0)*a.y()-p.y()*da.row(0)-dr.row(1)*a.x();
   return jac3;
 }
+
 } /* namespace towr */
 
