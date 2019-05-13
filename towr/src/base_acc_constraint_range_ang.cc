@@ -100,14 +100,20 @@ BaseAccConstraintRangeAng::UpdateJacobianAtInstance (double t, int k,
 
  if (k<spline_->GetPolynomialCount()+1)
  {
-   if (var_set ==node_variables_id_)
+
+   if (var_set == id::base_lin_nodes)
+   {
+      jac.middleRows(4*k, 4)= FillJacobianLin(t,k);
+   }
+   if (var_set == id::base_ang_nodes)
  {
    Eigen::Vector3d acc= base_angular_.GetAngularAccelerationInWorld(t);
    Eigen::Matrix3d w_R_b = base_angular_.GetRotationMatrixBaseToWorld(t);
-   jac.middleRows(4*k, 4)= FillJacobian(w_R_b,acc, k,t );
+   jac.middleRows(4*k, 4)= FillJacobianAng(w_R_b,acc, k,t );
    //std::cout<<"ang "<<std::endl;
    //std::cout<<jac<<std::endl;
  }
+
  }
 }
 int
@@ -121,12 +127,11 @@ BaseAccConstraintRangeAng::FillConstraint (Eigen::VectorXd acc, Jac I_w, State r
 {
 
   auto Iwacc=I_w*acc;
-  //Eigen::Vector3d grav=(0.0, 0.0, -9.81);
   Eigen::Vector3d rp=r.p();
   Eigen::Vector3d ra=r.a();
   auto rmg=rp.cross(m_*(Eigen::Vector3d (0.0, 0.0, g_)));
-  Eigen::Vector3d rma=ra.cross(m_*ra);
-  Eigen::Vector3d com=Iwacc+rma+rmg;
+  Eigen::Vector3d rma=rp.cross(m_*ra);
+  Eigen::Vector3d com=Iwacc+rmg+rma;
   Eigen::VectorXd constraint;
   constraint.resize(4);
   //double g[4];
@@ -138,43 +143,25 @@ BaseAccConstraintRangeAng::FillConstraint (Eigen::VectorXd acc, Jac I_w, State r
   return constraint;
 }
 
+
 NodeSpline::Jacobian
-BaseAccConstraintRangeAng::FillJacobian(Eigen::Matrix3d w_R_b, Eigen::Vector3d acc, int k, double t ) const
+BaseAccConstraintRangeAng::FillJacobianLin(double t, int k ) const
 {
-  //Jac I_b_sparse=I_b.sparseView();
-  Jac I_w = w_R_b.sparseView() * I_b * w_R_b.transpose().sparseView();
+  Jac jac1= Jac(3, jac1.cols());
+  jac1=DerivativeOfrxma(t);
 
-  // 1st term of product rule (derivative of R)
-  Eigen::Vector3d v11 = I_b*w_R_b.transpose()*acc;
-  
-  Jac jac11 = base_angular_.DerivOfRotVecMult(t, v11, false);
-
-  // 2nd term of product rule (derivative of R^T)
-  Jac jac12 = w_R_b.sparseView()*I_b*base_angular_.DerivOfRotVecMult(t, acc, true);
-
-  // 3rd term of product rule (derivative of wd)
-  Jac jac_ang_acc = base_angular_.GetDerivOfAngAccWrtEulerNodes(t);
-  Jac jac13 = I_w * jac_ang_acc;
-  
-
-  Jac jac1 = jac11 + jac12 + jac13;
-  //Derivative of rxma
-  Jac jac3=DerivativeOfrxma(t);
-  //Derivative of rxmg
   Jac jac2= Jac(3, jac1.cols());
-  jac2.coeffRef(0,6*k+1)=-m_*g_;
-  jac2.coeffRef(1,6*k)=+m_*g_;
+  jac2.coeffRef(0,6*k+1)=m_*g_;
+  jac2.coeffRef(1,6*k)=-m_*g_;
+  Jac total_jac=jac1+jac2;
 
-  Jac total_jac=jac1+jac3-jac2;
-
-
+  NodeSpline::Jacobian jacobian=NodeSpline::Jacobian(4, jac1.cols());
   double mu=4.0;
-  NodeSpline::Jacobian jacobian=NodeSpline::Jacobian(4, total_jac.cols());
   jacobian.row(0)=total_jac.row(0)+mu*total_jac.row(2);
   jacobian.row(1)=total_jac.row(1)+mu*total_jac.row(2);
   jacobian.row(2)=total_jac.row(0)-mu*total_jac.row(2);
   jacobian.row(3)=total_jac.row(1)-mu*total_jac.row(2);
- 
+
   return jacobian;
 }
 
@@ -192,6 +179,36 @@ BaseAccConstraintRangeAng::DerivativeOfrxma(double t) const
   jac3.row(2)=p.x()*da.row(1)+dr.row(0)*a.y()-p.y()*da.row(0)-dr.row(1)*a.x();
   return jac3;
 }
+NodeSpline::Jacobian
+BaseAccConstraintRangeAng::FillJacobianAng(Eigen::Matrix3d w_R_b, Eigen::Vector3d acc, int k, double t ) const
+{
+  //Jac I_b_sparse=I_b.sparseView();
+  Jac I_w = w_R_b.sparseView() * I_b * w_R_b.transpose().sparseView();
 
+  // 1st term of product rule (derivative of R)
+  Eigen::Vector3d v11 = I_b*w_R_b.transpose()*acc;
+
+  Jac jac11 = base_angular_.DerivOfRotVecMult(t, v11, false);
+
+  // 2nd term of product rule (derivative of R^T)
+  Jac jac12 = w_R_b.sparseView()*I_b*base_angular_.DerivOfRotVecMult(t, acc, true);
+
+  // 3rd term of product rule (derivative of wd)
+  Jac jac_ang_acc = base_angular_.GetDerivOfAngAccWrtEulerNodes(t);
+  Jac jac13 = I_w * jac_ang_acc;
+
+
+  Jac jac1 = jac11 + jac12 + jac13;
+
+
+
+  double mu=4.0;
+  NodeSpline::Jacobian jacobian=NodeSpline::Jacobian(4, jac1.cols());
+  jacobian.row(0)=jac1.row(0)+mu*jac1.row(2);
+  jacobian.row(1)=jac1.row(1)+mu*jac1.row(2);
+  jacobian.row(2)=jac1.row(0)-mu*jac1.row(2);
+  jacobian.row(3)=jac1.row(1)-mu*jac1.row(2);
+  return jacobian;
+}
 } /* namespace towr */
 
