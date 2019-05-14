@@ -28,6 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include <towr/constraints/base_acc_constraint_range_lin.h>
+#include <politopixAPI.h>
 #include <towr/constraints/dynamic_constraint.h>
 #include <towr/terrain/height_map.h>
 #include <towr/variables/nodes_variables_phase_based.h>
@@ -57,7 +58,11 @@ BaseAccConstraintRangeLin::BaseAccConstraintRangeLin (const DynamicModel::Ptr& m
  SetRows(NumberNodes_*4);
  terrain_=terrain;
  ee_motion_=spline_holder.ee_motion_;
- mu_= terrain->GetFrictionCoeff();
+ base_ << 0.0, 0.0, 1.0;
+ //non posso metterlo nel costruttore, sistemalo!
+// LinearEdges_(4*GetNumberOfFeetInTouch (dt),3);
+// AngularEdges_(4*GetNumberOfFeetInTouch (dt),3);
+
 }
 
 void
@@ -67,6 +72,7 @@ BaseAccConstraintRangeLin::UpdateConstraintAtInstance (double t, int k,
 
   if (k<NumberNodes_)
   {
+
     auto com=spline_->GetPoint(t);
     g.middleRows(GetRow(k, 0), 4) =FillConstraint(com);
     //std::cout<<"l' acc lin è "<<com.a()<<std::endl;
@@ -98,7 +104,7 @@ BaseAccConstraintRangeLin::UpdateJacobianAtInstance (double t, int k,
    if (var_set ==node_variables_id_)
     {
 
-      jac.middleRows(4*k,4)=FillJacobian(spline_,k);
+      jac.middleRows(4*k,4)=FillJacobian(spline_,t);
 
       //spline_->GetJacobianWrtNodes(k,0.1, kAcc);
       //std::cout<<"lin "<<std::endl;
@@ -126,20 +132,10 @@ BaseAccConstraintRangeLin::FillConstraint (State com) const
   return g;
 }
 NodeSpline::Jacobian
-BaseAccConstraintRangeLin::FillJacobian(NodeSpline::Ptr spline_,int k) const
+BaseAccConstraintRangeLin::FillJacobian(NodeSpline::Ptr spline_,double t) const
 {
-  double a;
-  int pol;
-  if (k==0)
-      {
-        a=0;
-        pol=k;
-      }
-  else
-       { a=0.1;
-         pol=k-1;
-       }
-  auto jac1=spline_->GetJacobianWrtNodes(pol,a, kAcc);
+
+  auto jac1=spline_->GetJacobianWrtNodes(t, kAcc);
 
   double mu=10.0;
   Jacobian g=Jacobian(4, jac1.cols());
@@ -151,98 +147,18 @@ BaseAccConstraintRangeLin::FillJacobian(NodeSpline::Ptr spline_,int k) const
   return g;
 
 }
-// questa parte viene da cone.cc
-Eigen::MatrixXd BaseAccConstraintRangeLin::ReturnNormalTerrain (double t)
-{
 
-  Eigen::MatrixXd n(4,3);
-  for (int ee=0; GetNumberOfFeetInTouch (t); ee++)
-  {Eigen::Vector3d p = ee_motion_in_touch_.at(ee)->GetPoint(t).p();
-   n.row(ee)= terrain_->GetNormalizedBasis(HeightMap::Normal, p.x(), p.y());
-  }
 
- return n;
-}
-
-Eigen::MatrixXd BaseAccConstraintRangeLin::ReturnTangentTerrain (double t)
-{
- Eigen::MatrixXd tang (4,3);
- for (int ee=0; GetNumberOfFeetInTouch (t); ee++)
-  {   Eigen::Vector3d p = ee_motion_in_touch_.at(ee)->GetPoint(t).p();
-      tang.row(ee) = terrain_->GetNormalizedBasis(HeightMap::Tangent1, p.x(), p.y());
-  }
- return tang;
-}
-
-Eigen::Matrix3d BaseAccConstraintRangeLin::RotationMatrix (Eigen::Vector3d t, double angle) const
-
-{
-  double cmu=cos(angle);
-  double smu=sin(angle);
-  Eigen::Matrix3d M;
-  M(0,0)=std::pow(t(0),2)*(1-cmu)+cmu;          M(0,1)=t(0)*t(1)*(1-cmu)-t(2)*smu;      M(0,2)=t(0)*t(2)*(1-cmu)+t(1)*smu;
-  M(1,0)=t(0)*t(1)*(1-cmu)+t(2)*smu;            M(1,1)=std::pow(t(1),2)*(1-cmu)+cmu;    M(1,2)=t(1)*t(2)*(1-cmu)-t(0)*smu;
-  M(2,0)=t(0)*t(2)*(1-cmu)-t(1)*smu;            M(2,1)=t(1)*t(2)*(1-cmu)-t(0)*smu;      M(2,2)=std::pow(t(2),2)*(1-cmu)+cmu;
-  return M;
-}
-
-Eigen::Vector3d BaseAccConstraintRangeLin::GetEdge (Eigen::Matrix3d M, Eigen::Vector3d n) const
-{
-  Eigen::Vector3d edge=M*n;
-  return edge;
-}
-void BaseAccConstraintRangeLin::GetAllEdges (double t)
-{
-  Eigen::MatrixXd E(4*GetNumberOfFeetInTouch (t),3);
-  for (int ee=0; GetNumberOfFeetInTouch (t); ee++)
-  {
-   int f=ee*4;
-   Eigen::Vector3d normal=ReturnTangentTerrain(t).row(ee);
-   Eigen::Vector3d tang=ReturnNormalTerrain(t).row(ee);
-   Eigen::Matrix3d M=RotationMatrix(tang,mu_);
-   Eigen::Matrix3d M1=RotationMatrix(normal,PI/4);
-
-   E.row(f++)=GetEdge(M,normal);
-   E.row(f++)=GetEdge(M1,E.row(f-1));
-   E.row(f++)=GetEdge(M1,E.row(f-1));
-   E.row(f++)=GetEdge(M1,E.row(f-1));
-  }
-  for (int i=0; model_->GetEECount(); i++)
-  {
-    //e se non sono tutti in contatto che fai di e4?
-    e1.row(i)=E.row(i);
-    e2.row(i)=E.row(i+4);
-    e3.row(i)=E.row(i+8);
-    e4.row(i)=E.row(i+12);
-  }
-}
-int BaseAccConstraintRangeLin::GetNumberOfFeetInTouch (double t)
-{
-
-  for (int ee=0; model_->GetEECount(); ee++)
-   { Eigen::Vector3d p = ee_motion_.at(ee)->GetPoint(t).p();
-     if (p.z()=terrain_->GetHeight(p.x(),p.y()))
-      {
-       ee_motion_in_touch_.push_back(ee_motion_.at(ee));
-      }
-  return ee_motion_in_touch_.size();
-  }
-}
-
-//void BaseAccConstraintRangeLin::GetAllEdges (double t)
+//Eigen::MatrixXd BaseAccConstraintRangeLin::GetDerivativeWrtNodes (int ee, double t) const
 //{
-//  for (int ee=0; model_->GetEECount(); ee++)
-//  {
-//   Eigen::Vector3d normal=ReturnTangentTerrain(t).row(ee);
-//   Eigen::Vector3d tang=ReturnNormalTerrain(t).row(ee);
-//   Eigen::Matrix3d M=RotationMatrix(tang,mu_);
-//   Eigen::Matrix3d M1=RotationMatrix(normal,PI/4);
-//   e1.row(ee)=GetEdge(M,normal);
-//   e2.row(ee)=GetEdge(M1,e1.row(ee));
-//   e3.row(ee)=GetEdge(M1,e2.row(ee));
-//   e4.row(ee)=GetEdge(M1,e3.row(ee));
-//
-//  }
+//  Eigen::MatrixXd Dn;
+//  Eigen::Vector3d p = ee_motion_in_touch_.at(ee)->GetPoint(t).p();
+//  Jacobian jac_ee_pos = ee_motion_in_touch_.at(ee)->GetJacobianWrtNodes(t,kPos);
+//  Dn.row(0)= terrain_->GetDerivativeOfNormalizedBasisWrt(HeightMap::Normal, X, p.x(), p.y());
+//  Dn.row(1)= terrain_->GetDerivativeOfNormalizedBasisWrt(HeightMap::Normal, Y, p.x(), p.y());
+//  auto DnDnodes= Dn*jac_ee_pos;
+//  return DnDnodes;
 //}
+
 } /* namespace towr */
 

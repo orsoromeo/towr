@@ -74,8 +74,9 @@ private:
 
   int GetRow (int node, int dim) const;
   Eigen::VectorXd FillConstraint (Eigen::VectorXd acc, Jac I_w, State r) const;
-  NodeSpline::Jacobian FillJacobian(Eigen::Matrix3d w_R_b, Eigen::Vector3d acc, int k , double t) const;
+  NodeSpline::Jacobian FillJacobianLin(double t , int k) const;
   Jac DerivativeOfrxma(double t) const;
+  NodeSpline::Jacobian FillJacobianAng(Eigen::Matrix3d w_R_b, Eigen::Vector3d acc, int k , double t) const;
 
 };
 

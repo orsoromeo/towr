@@ -77,19 +77,15 @@ private:
   std::vector<NodeSpline::Ptr> ee_motion_;
   NodesVariablesPhaseBased::Ptr ee_force_;
   double mu_;
-  Eigen::MatrixXd  e1;
-  Eigen::MatrixXd  e2;
-  Eigen::MatrixXd  e3;
-  Eigen::MatrixXd  e4;
-  NodeSpline::Jacobian FillJacobian(NodeSpline::Ptr spline_, int k) const;
-  VectorXd FillConstraint (State com) const;
-  Eigen::MatrixXd ReturnNormalTerrain (double t);
-  Eigen::MatrixXd ReturnTangentTerrain(double t);
-  Eigen::Matrix3d RotationMatrix (Eigen::Vector3d t, double angle) const;
-  Eigen::Vector3d GetEdge (Eigen::Matrix3d M, Eigen::Vector3d n) const;
-  void GetAllEdges (double t);
-  int GetNumberOfFeetInTouch (double t);
+  Eigen::MatrixXd  LinearEdges_;
+  Eigen::MatrixXd  AngularEdges_;
+  Eigen::Vector3d base_;
+
   int GetRow (int node, int dim) const;
+  int GetNumberOfFeetInTouch (double t);
+  VectorXd FillConstraint (State com) const;
+  NodeSpline::Jacobian FillJacobian(NodeSpline::Ptr spline_, double t) const;
+  //Eigen::MatrixXd GetDerivativeWrtNodes (int ee, double t) const;
 };
 
 } /* namespace towr */

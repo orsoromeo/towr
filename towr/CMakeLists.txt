@@ -15,6 +15,8 @@ endif()
 # so dynamic library libtowr.so retains link to ifopt_core.so
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
+link_directories(~/misc_ws/politopix/bin)
+
 # The motion-planning problem formulated through variables and constraints
 add_library(${PROJECT_NAME} SHARED
   # sample formulation usage
@@ -30,7 +32,7 @@ add_library(${PROJECT_NAME} SHARED
   src/dynamic_model.cc
   src/single_rigid_body_dynamics.cc
   # constraints
-  src/cone.cc
+  src/geometry.cc
   src/base_acc_constraint_range_lin.cc
   src/base_acc_constraint_range_ang.cc
   src/time_discretization_constraint.cc
@@ -68,11 +70,14 @@ add_library(${PROJECT_NAME} SHARED
 target_link_libraries(${PROJECT_NAME} 
   PUBLIC 
     ifopt::ifopt_core
+    polito
 )
+
 target_include_directories(${PROJECT_NAME} 
   PUBLIC
+   ~/misc_ws/politopix/trunk
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:include> 
 )
 
 
@@ -81,20 +86,26 @@ target_include_directories(${PROJECT_NAME}
 #############
 enable_testing()
 # example problem solved with IPOPT
-#add_executable(${PROJECT_NAME}-example 
-#  test/hopper_example.cc
+#add_executable(${PROJECT_NAME}-politopix_example
+#  src/cone.cc
 #)
-#target_link_libraries(${PROJECT_NAME}-example  
+#target_link_libraries(${PROJECT_NAME}-politopix_example
 #  PRIVATE
 #    ${PROJECT_NAME} 
 #    ifopt::ifopt_ipopt
+#  polito
+#)
+#target_include_directories(${PROJECT_NAME}-politopix_example
+#  PUBLIC
+#   ~/misc_ws/politopix/trunk
+#    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#    $<INSTALL_INTERFACE:include>
 #)
 #add_test(${PROJECT_NAME}-example ${PROJECT_NAME}-example)
 
 # unit tests of costs/constraints
 find_package(GTest QUIET)
 if (TARGET GTest::GTest) # only build when modern targets exists
-
   add_executable(${PROJECT_NAME}-test
     test/single_hop_example_test.cc
     test/phase_nodes_test.cc

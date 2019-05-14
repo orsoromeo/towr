@@ -59,7 +59,7 @@ Parameters::Parameters ()
   constraints_.push_back(EndeffectorRom); //Ensures that the range of motion is respected at discrete times.
   constraints_.push_back(Force); // ensures unilateral forces and inside the friction cone.
   constraints_.push_back(Swing); // creates smoother swing motions, not absolutely required.
-  constraints_.push_back(BaseAccConstraintValueLin);//accelerations are buonded
+  //constraints_.push_back(BaseAccConstraintValueLin);//accelerations are buonded
   //constraints_.push_back(BaseAccConstraintValueAng);//accelerations are buonded
 
   // optional costs to e.g penalize endeffector forces
