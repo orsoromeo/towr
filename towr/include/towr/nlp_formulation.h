@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ifopt/variable_set.h>
 #include <ifopt/constraint_set.h>
 #include <ifopt/cost_term.h>
-
+#include <ifopt/problem.h>
 #include <towr/variables/spline_holder.h>
 #include <towr/models/robot_model.h>
 #include <towr/terrain/height_map.h>
@@ -91,7 +91,7 @@ public:
    * @brief The ifopt constraints that enforce feasible motions.
    * @param[in] uses the fully-constructed splines for initialization of constraints.
    */
-  ContraintPtrVec GetConstraints(const SplineHolder& spline_holder) const;
+  ContraintPtrVec GetConstraints(const SplineHolder& spline_holder, ifopt::Problem) const;
 
   /** @brief The ifopt costs to tune the motion. */
   ContraintPtrVec GetCosts() const;
@@ -113,7 +113,7 @@ private:
 
   // constraints
   ContraintPtrVec GetConstraint(Parameters::ConstraintName name,
-                                const SplineHolder& splines) const;
+                                const SplineHolder& splines, ifopt::Problem nlp) const;
   ContraintPtrVec MakeDynamicConstraint(const SplineHolder& s) const;
   ContraintPtrVec MakeRangeOfMotionBoxConstraint(const SplineHolder& s) const;
   ContraintPtrVec MakeTotalTimeConstraint() const;
@@ -122,7 +122,7 @@ private:
   ContraintPtrVec MakeSwingConstraint() const;
   ContraintPtrVec MakeBaseRangeOfMotionConstraint(const SplineHolder& s) const;
   ContraintPtrVec MakeBaseAccConstraint(const SplineHolder& s) const;
-  ContraintPtrVec MakeBaseAccConstraintValueLin(const SplineHolder& s) const;
+  ContraintPtrVec MakeBaseAccConstraintValueLin(const SplineHolder& s, ifopt::Problem nlp) const;
   ContraintPtrVec MakeBaseAccConstraintValueAng(const SplineHolder& s) const;
 
   // costs

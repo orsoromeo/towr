@@ -1,13 +1,12 @@
 #include <towr/constraints/geometry.h>
 #include <towr/constraints/base_acc_constraint_range_lin.h>
-#include <politopixAPI.h>
+#include <ifopt/problem.h>
 #include <towr/constraints/dynamic_constraint.h>
 #include <towr/terrain/height_map.h>
 #include <towr/variables/nodes_variables_phase_based.h>
 #include <towr/variables/spline_holder.h>
 #include <towr/variables/variable_names.h>
 #include <towr/variables/cartesian_dimensions.h>
-
 #include <towr/models/single_rigid_body_dynamics.h>
 #include <towr/models/dynamic_model.h>
 #include <iostream>
@@ -16,12 +15,17 @@
 
 namespace towr {
 
-Geometry::Geometry (DynamicModel::Ptr model, HeightMap::Ptr terrain, const SplineHolder& spline_holder)
+Geometry::Geometry (DynamicModel::Ptr model,
+                    HeightMap::Ptr terrain,
+                    const SplineHolder& spline_holder
+                    )
 {
+
   model_=model;
   terrain_=terrain;
   ee_motion_=spline_holder.ee_motion_;
   base_ << 0.0, 0.0, 1.0;
+
 }
 
 int Geometry::GetNumberOfFeetInTouch (double t)
@@ -107,14 +111,14 @@ Eigen::MatrixXd Geometry::ComputeLinearPartOfTheCone (Eigen::Vector3d axis, doub
 
 Eigen::MatrixXd Geometry::ComputeAngularPartOfTheCone (double t, Eigen::Vector3d axis, double angle,double ee)
 {
-  //Eigen::MatrixXd EA;
+
   Eigen::MatrixXd AngularEdges;
   Eigen::Vector3d p = ee_motion_in_touch_.at(ee)->GetPoint(t).p();
   for (int i=0; i<4; i++)
     {
       Eigen::Vector3d row=LinearEdges_.row(i);
       AngularEdges.row(i)=p.cross(row);
-      //AngularEdges.row(i)=ComputeNextEdge(RotationMatrix(axis,angle),EA.row(i));
+
 
      }
    return AngularEdges;
@@ -145,11 +149,12 @@ Eigen::Matrix3d Geometry::RotationZ (double angle) const
   return M;
 }
 
-double Geometry::ComputeRotationAngle (Eigen::Vector3d axis) const
+double Geometry::ComputeRotationAngle (Eigen::Vector3d normal) const
 {
-   auto ab=axis.dot(base_);
-   double angle=acos(ab/(axis.norm()*base_.norm()));
+   auto ab=normal.dot(base_);
+   double angle=acos(ab/(normal.norm()*base_.norm()));
    return angle;
 }
 
-}
+
+} /* namespace towr */

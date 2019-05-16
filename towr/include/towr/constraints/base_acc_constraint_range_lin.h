@@ -30,16 +30,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef TOWR_CONSTRAINTS_BASE_ACC_CONSTRAINT_RANGE_LIN_H_
 #define TOWR_CONSTRAINTS_BASE_ACC_CONSTRAINT_RANGE_LIN_H_
 
+#include <ifopt/problem.h>
 #include <towr/variables/spline_holder.h>
 #include <towr/variables/spline.h>
 #include <towr/variables/nodes_variables_phase_based.h>
 #include <towr/terrain/height_map.h>
 #include <towr/models/dynamic_model.h>
-
-#include <iostream>
-
+#include <ifopt/constraint_set.h>
+#include <ifopt/composite.h>
 #include "time_discretization_constraint.h"
-
+#include <towr/constraints/total_duration_constraint.h>
+#include <iostream>
 namespace towr {
 
 /**
@@ -57,7 +58,15 @@ public:
    * @param dt The discretization interval of the constraints.
    * @param spline_holder  Holds pointers to the base variables.
    */
-  BaseAccConstraintRangeLin (const DynamicModel::Ptr &model, double T, double dt, const NodeSpline::Ptr& spline, std::string name,HeightMap::Ptr terrain, const SplineHolder& spline_holder );
+  BaseAccConstraintRangeLin (const DynamicModel::Ptr &model,
+                             double T,
+                             double dt,
+                             const NodeSpline::Ptr& spline,
+                             std::string name,
+                             HeightMap::Ptr terrain,
+                             const SplineHolder& spline_holder,
+                             ifopt::Problem nlp,
+                             std::vector<VecTimes> duration);
   virtual ~BaseAccConstraintRangeLin () = default;
 
   void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
@@ -65,6 +74,8 @@ public:
   void UpdateJacobianAtInstance(double t, int k, std::string, Jacobian&) const override;
   std::vector<NodeSpline::Ptr> ee_motion_in_touch_;
 private:
+  std::vector<VecTimes> duration_;
+  ifopt::Composite::Ptr variables_;
   int NumberNodes_;
   mutable DynamicModel::Ptr model_;
   double g_;

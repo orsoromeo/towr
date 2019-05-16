@@ -104,7 +104,7 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
     nlp_ = ifopt::Problem();
     for (auto c : formulation_.GetVariableSets(solution))
       nlp_.AddVariableSet(c);
-    for (auto c : formulation_.GetConstraints(solution))
+    for (auto c : formulation_.GetConstraints(solution,nlp_))
       nlp_.AddConstraintSet(c);
     for (auto c : formulation_.GetCosts())
       nlp_.AddCostSet(c);

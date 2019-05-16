@@ -28,7 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include <towr/nlp_formulation.h>
-
+#include <ifopt/problem.h>
 #include <towr/variables/variable_names.h>
 #include <towr/variables/phase_durations.h>
 
@@ -200,11 +200,11 @@ NlpFormulation::MakeContactScheduleVariables () const
 }
 
 NlpFormulation::ContraintPtrVec
-NlpFormulation::GetConstraints(const SplineHolder& spline_holder) const
+NlpFormulation::GetConstraints(const SplineHolder& spline_holder, ifopt::Problem nlp) const
 {
   ContraintPtrVec constraints;
   for (auto name : params_.constraints_)
-    for (auto c : GetConstraint(name, spline_holder))
+    for (auto c : GetConstraint(name, spline_holder,nlp))
       constraints.push_back(c);
 
   return constraints;
@@ -212,7 +212,7 @@ NlpFormulation::GetConstraints(const SplineHolder& spline_holder) const
 
 NlpFormulation::ContraintPtrVec
 NlpFormulation::GetConstraint (Parameters::ConstraintName name,
-                           const SplineHolder& s) const
+                           const SplineHolder& s, ifopt::Problem nlp) const
 {
   switch (name) {
     case Parameters::Dynamic:                     return MakeDynamicConstraint(s);
@@ -223,7 +223,7 @@ NlpFormulation::GetConstraint (Parameters::ConstraintName name,
     case Parameters::Force:                       return MakeForceConstraint();
     case Parameters::Swing:                       return MakeSwingConstraint();
     case Parameters::BaseAcc:                     return MakeBaseAccConstraint(s);
-    case Parameters::BaseAccConstraintValueLin:   return MakeBaseAccConstraintValueLin(s);
+    case Parameters::BaseAccConstraintValueLin:   return MakeBaseAccConstraintValueLin(s,nlp);
     case Parameters::BaseAccConstraintValueAng:   return MakeBaseAccConstraintValueAng(s);
     default: throw std::runtime_error("constraint not defined!");
   }
@@ -334,14 +334,16 @@ NlpFormulation::MakeBaseAccConstraint (const SplineHolder& s) const
   return constraints;
 }
 NlpFormulation::ContraintPtrVec
-NlpFormulation::MakeBaseAccConstraintValueLin (const SplineHolder& s) const
+NlpFormulation::MakeBaseAccConstraintValueLin (const SplineHolder& s, ifopt::Problem nlp) const
 {
   ContraintPtrVec constraints;
   constraints.push_back(std::make_shared<BaseAccConstraintRangeLin>(model_.dynamic_model_, params_.GetTotalTime(),
                                                                     params_.dt_constraint_base_motion_,
                                                                     s.base_linear_, id::base_lin_nodes,
                                                                     terrain_,
-                                                                    s));
+                                                                    s,
+                                                                    nlp,
+                                                                    params_.ee_phase_durations_));
 
 
       return constraints;
@@ -350,9 +352,12 @@ NlpFormulation::ContraintPtrVec
 NlpFormulation::MakeBaseAccConstraintValueAng (const SplineHolder& s) const
 {
   ContraintPtrVec constraints;
-  constraints.push_back(std::make_shared<BaseAccConstraintRangeAng>(model_.dynamic_model_, params_.GetTotalTime(),
+  constraints.push_back(std::make_shared<BaseAccConstraintRangeAng>(model_.dynamic_model_,
+                                                                    params_.GetTotalTime(),
                                                                     params_.dt_constraint_base_motion_,
-                                                                    s.base_angular_, s.base_angular_ , id::base_ang_nodes));
+                                                                    s.base_angular_,
+                                                                    s.base_angular_ ,
+                                                                    id::base_ang_nodes));
       return constraints;
 }
 NlpFormulation::ContraintPtrVec

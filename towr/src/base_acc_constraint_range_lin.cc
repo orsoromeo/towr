@@ -28,6 +28,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include <towr/constraints/base_acc_constraint_range_lin.h>
+#include <ifopt/constraint_set.h>
+#include <ifopt/problem.h>
 #include <politopixAPI.h>
 #include <towr/constraints/dynamic_constraint.h>
 #include <towr/terrain/height_map.h>
@@ -35,7 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr/variables/spline_holder.h>
 #include <towr/variables/variable_names.h>
 #include <towr/variables/cartesian_dimensions.h>
-
+#include <ifopt/composite.h>
 #include <towr/models/single_rigid_body_dynamics.h>
 #include <towr/models/dynamic_model.h>
 #include <iostream>
@@ -45,11 +47,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace towr {
 
 
-BaseAccConstraintRangeLin::BaseAccConstraintRangeLin (const DynamicModel::Ptr& model, double T, double dt,
-                                                      const NodeSpline::Ptr& spline, std::string node_variable_name, HeightMap::Ptr terrain, const SplineHolder& spline_holder)
+BaseAccConstraintRangeLin::BaseAccConstraintRangeLin (const DynamicModel::Ptr& model,
+                                                      double T,
+                                                      double dt,
+                                                      const NodeSpline::Ptr& spline,
+                                                      std::string node_variable_name,
+                                                      HeightMap::Ptr terrain,
+                                                      const SplineHolder& spline_holder,
+                                                      ifopt::Problem nlp,
+                                                      std::vector<VecTimes> duration)
     :TimeDiscretizationConstraint(T, dt, "baseAccConstraintValueLin-")
 
 {
+ duration_=duration;
+ variables_=nlp.variables();
  model_=model;
  node_variables_id_=node_variable_name;
  spline_=spline;
@@ -159,6 +170,6 @@ BaseAccConstraintRangeLin::FillJacobian(NodeSpline::Ptr spline_,double t) const
 //  auto DnDnodes= Dn*jac_ee_pos;
 //  return DnDnodes;
 //}
-
+//
 } /* namespace towr */
 
