@@ -119,7 +119,8 @@ TEST(TOWR, optimizeTrajectory){
                                                                             solution.base_linear_, id::base_lin_nodes,
                                                                             formulation.terrain_,
                                                                             solution,
-                                                                            formulation.params_.GetEECount())) ;
+                                                                            formulation.params_.GetEECount(),
+                                                                            formulation.params_.ee_phase_durations_)) ;
 
 
           //constraints.push_back(std::make_shared<BaseAccConstraintRangeAng>(formulation.model_.dynamic_model_,

@@ -2,7 +2,7 @@
 
 namespace towr {
 
-Derivative::Derivative (HeightMap::Ptr &terrain,
+Derivative::Derivative (const HeightMap::Ptr &terrain,
                         const SplineHolder& spline_holder
                          )
 {

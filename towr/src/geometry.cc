@@ -18,9 +18,10 @@ namespace towr {
 Geometry::Geometry (DynamicModel::Ptr model,
                     const HeightMap::Ptr & terrain,
                     const SplineHolder& spline_holder,
-                    int numberofleg
-                    )
+                    int numberofleg,
+                    const std::vector<std::vector<double> > &phase_durations)
 {
+  phase_durations_=phase_durations;
   numberoflegs_=numberofleg;
   model_=model;
   terrain_=terrain;
@@ -28,23 +29,36 @@ Geometry::Geometry (DynamicModel::Ptr model,
   base_ << 0.0, 0.0, 1.0;
   LinearEdges_.resize(4*numberofleg,3);
   AngularEdges_.resize(4*numberofleg,3);
-
-
+  EhatLin_.resize(4*numberofleg,3);
+  EhatAng_.resize(4*numberofleg,3);
 }
 
 int Geometry::GetNumberOfFeetInTouch (double t) const
 {
-  int i=0;
+  int m=0;
   for (int ee=0; ee<numberoflegs_; ee++)
-   {
-    Eigen::Vector3d p = ee_motion_.at(ee)->GetPoint(t).p();
-     if (p.z()-terrain_->GetHeight(p.x(),p.y())<1e-6)
-      {
-       ee_motion_in_touch_.push_back(ee_motion_.at(ee));
-       i++;
-      }
+  {
+    double l=0.0;
+    int z=0;
+    int s=0;
+    std::vector<double> vector=phase_durations_.at(ee);
+    for (int i=0; i<vector.size(); i++)
+     {
+      double a=vector.at(i);
+      l=l+a;
+      if (t-l<1e-6)
+       {
+        z=i;
+        if (t==l) {z=0;}
+        break;
+       }
+      else {}
+     }
+   if ((z%2)==0) {s=1; ee_motion_in_touch_.push_back(ee_motion_.at(ee)); }
+   else {s=0;}
+   m=m+s;
   }
-  return i;
+  return m;
 }
 
 Eigen::MatrixXd Geometry::ReturnNormalTerrain (double t) const
@@ -83,6 +97,10 @@ Eigen::MatrixXd Geometry::ComputeCone (double t) const
 {
   LinearEdges_.setZero();
   AngularEdges_.setZero();
+  EhatLin_.setZero();
+  EhatAng_.setZero();
+  std::cout<<t<<std::endl;
+  //std::cout<<ee_motion_.at(0)->GetPoint(t).p()<<std::endl;
   for (int ee=0; ee<GetNumberOfFeetInTouch (t); ee++)
    {
     Eigen::Vector3d normal=ReturnNormalTerrain(t).row(ee);
@@ -92,11 +110,16 @@ Eigen::MatrixXd Geometry::ComputeCone (double t) const
     Eigen::MatrixXd tmp = ComputeLinearPartOfTheCone(axis,angle);
     for (int i=0; i<4; i++)
      { LinearEdges_.block(4*ee,0,4,3).row(i)= tmp.row(i);
-       AngularEdges_.block(4*ee,0,4,3).row(i)=ComputeAngularPartOfTheCone(t,axis,angle,ee).row(i); }
+       AngularEdges_.block(4*ee,0,4,3).row(i)=ComputeAngularPartOfTheCone(t,axis,angle,ee).row(i);
+       EhatLin_.block(4*ee,0,4,3).row(i)=RotationMatrix(normal,angle).inverse()*LinearEdges_.block(4*ee,0,4,3).row(i).transpose();
+       EhatAng_.block(4*ee,0,4,3).row(i)=RotationMatrix(normal,angle).inverse()*AngularEdges_.block(4*ee,0,4,3).row(i).transpose();
+    }
    }
+
     Eigen::MatrixXd Edges(4*numberoflegs_,6);
     Edges.block(0,0,4*numberoflegs_,3)=LinearEdges_;
     Edges.block(0,3,4*numberoflegs_,3)=AngularEdges_;
+    std::cout<<Edges.transpose()<<std::endl;
     return Edges.transpose();
 
 
@@ -111,6 +134,7 @@ Geometry::ComputeLinearPartOfTheCone (const Eigen::Vector3d& axis, const double 
   for (int i=0; i<4; i++)
   {
     E.row(i)=ComputeNextEdge(RotationZ(PI/4+(double)i*PI/2)*RotationX(20*PI/180),base_);
+    //std::cout<<E.row(i)<<std::endl;
     LinearEdges.row(i)=ComputeNextEdge(RotationMatrix(axis,angle),E.row(i));
   }
 

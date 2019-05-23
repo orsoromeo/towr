@@ -368,7 +368,8 @@ NlpFormulation::MakeBaseAccConstraintValueLin (const SplineHolder& s, ifopt::Pro
                                                                     s.base_linear_, id::base_lin_nodes,
                                                                     terrain_,
                                                                     s,
-                                                                    params_.GetEECount()));
+                                                                    params_.GetEECount(),
+                                                                    params_.ee_phase_durations_));
 
 
       return constraints;

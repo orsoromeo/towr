@@ -67,8 +67,8 @@ public:
                              std::string name,
                              const HeightMap::Ptr &terrain,
                              const SplineHolder& spline_holder,
-                             int numberoflegs
-                             );
+                             int numberoflegs,
+                             const std::vector<std::vector<double>> &phase_durations);
   virtual ~BaseAccConstraintRangeLin () = default;
 
   void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
@@ -98,6 +98,7 @@ private:
   Eigen::MatrixXd  AngularEdges_;
   Eigen::Vector3d base_;
   Geometry geom_;
+  Derivative der_;
   int GetRow (int node, int dim) const;
   int GetNumberOfFeetInTouch (double t);
   VectorXd FillConstraint (State com, double t) const;
@@ -105,6 +106,11 @@ private:
   Eigen::Vector3d ComputeLinearWrench (State com) const;
   Eigen::Vector3d ComputeAngularWrench (Eigen::VectorXd acc, Jac I_w, State com) const;
   Eigen::VectorXd ComputeWrench (State com, double t) const;
+
+  NodeSpline::Jacobian FillJacobianLinWrenchWrtLin(double t) const;
+  NodeSpline::Jacobian FillJacobianAngWrenchWrtLin(double t, int k ) const;
+  BaseAccConstraintRangeLin::Jac DerivativeOfrxma(double t) const;
+  NodeSpline::Jacobian FillJacobianAngWrenchWrtAng(double t) const;
 };
 
 } /* namespace towr */

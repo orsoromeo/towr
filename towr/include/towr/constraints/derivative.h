@@ -17,7 +17,7 @@ class Derivative {
 public:
 
   Derivative (
-              HeightMap::Ptr & terrain,
+              const HeightMap::Ptr & terrain,
               const SplineHolder& spline_holder
             );
   virtual ~Derivative () = default;

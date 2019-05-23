@@ -54,21 +54,21 @@ BaseAccConstraintRangeLin::BaseAccConstraintRangeLin (const DynamicModel::Ptr& m
                                                       std::string node_variable_name,
                                                       const HeightMap::Ptr& terrain,
                                                       const SplineHolder& spline_holder,
-                                                      int numberofleg)
-    :TimeDiscretizationConstraint(T, dt, "baseAccConstraintValueLin-"), geom_(model_,terrain, spline_holder, numberofleg)
+                                                      int numberofleg,
+                                                      const std::vector<std::vector<double>>& phase_durations)
+    :TimeDiscretizationConstraint(T, dt, "baseAccConstraintValueLin-"), geom_(model_,terrain, spline_holder, numberofleg, phase_durations), der_(terrain, spline_holder)
 
 {
  numberofleg_=numberofleg;
  model_=model;
  node_variables_id_=node_variable_name;
- spline_=spline;
+ base_linear_=spline;
  node_bounds_.resize(6);
- NumberNodes_=(spline_->GetPolynomialCount()+1);
+ NumberNodes_=(base_linear_->GetPolynomialCount()+1);
  SetRows(NumberNodes_*6);
  ee_motion_=spline_holder.ee_motion_;
  base_ << 0.0, 0.0, 1.0;
  lambda_=spline_holder.lambda_;
- //Derivative der(terrain, spline_holder);
  m_=model_->m();
  g_= model_->g();
  base_angular_ = EulerConverter(spline_holder.base_angular_);
@@ -84,7 +84,7 @@ BaseAccConstraintRangeLin::UpdateConstraintAtInstance (double t, int k,
   if (k<NumberNodes_)
   {
 
-    auto com=spline_->GetPoint(t);
+    auto com=base_linear_->GetPoint(t);
     g.middleRows(GetRow(k, 0), 6) =FillConstraint(com,t);
 
   }
@@ -107,22 +107,28 @@ BaseAccConstraintRangeLin::UpdateJacobianAtInstance (double t, int k,
                                                 std::string var_set,
                                                 Jacobian& jac) const
 {
-//
-//   if (k<NumberNodes_)
-//   {
-//
-//   //if (var_set==id::base_lin_nodes)
-//   if (var_set ==node_variables_id_)
-//    {
-//
-//      jac.middleRows(6*k,6)=FillJacobian(spline_,t);
-//
-//      //spline_->GetJacobianWrtNodes(k,0.1, kAcc);
-//      //std::cout<<"lin "<<std::endl;
-//      //std::cout<<jac<<std::endl;
-//
-//   }
-// }
+
+   if (k<NumberNodes_)
+   {
+
+    if (var_set==id::base_lin_nodes)
+     {
+      jac.middleRows(6*k,3)=FillJacobianLinWrenchWrtLin(t);
+      jac.middleRows(6*k+3,3)=FillJacobianAngWrenchWrtLin(t,k);
+     }
+    if (var_set ==id::base_ang_nodes)
+     {
+      jac.middleRows(6*k+3,3)=FillJacobianAngWrenchWrtAng(t);
+     }
+
+
+
+      //spline_->GetJacobianWrtNodes(k,0.1, kAcc);
+      //std::cout<<"lin "<<std::endl;
+      //std::cout<<jac<<std::endl;
+
+   }
+
 }
 int
 BaseAccConstraintRangeLin::GetRow (int node, int dim) const
@@ -140,22 +146,7 @@ BaseAccConstraintRangeLin::FillConstraint (State com, double t) const
   auto lambdaedge=edges*lambda;
   return g-lambdaedge;
 }
-NodeSpline::Jacobian
-BaseAccConstraintRangeLin::FillJacobian(NodeSpline::Ptr spline_,double t) const
-{
 
-  auto jac1=spline_->GetJacobianWrtNodes(t, kAcc);
-
-  double mu=10.0;
-  Jacobian g=Jacobian(6, jac1.cols());
-  g.row(0)=jac1.row(0)+mu*jac1.row(2);
-  g.row(1)=jac1.row(1)+mu*jac1.row(2);
-  g.row(2)=jac1.row(0)-mu*jac1.row(2);
-  g.row(3)=jac1.row(1)-mu*jac1.row(2);
-  
-  return g;
-
-}
 
 Eigen::Vector3d BaseAccConstraintRangeLin::ComputeLinearWrench (State com) const
 {
@@ -188,6 +179,64 @@ BaseAccConstraintRangeLin::ComputeWrench (State com, double t) const
   //Jac I_w=I_w1.sparseView();
   g.middleRows(3, 3)=ComputeAngularWrench(acc,I_w,com);
   return g;
+}
+NodeSpline::Jacobian
+BaseAccConstraintRangeLin::FillJacobianLinWrenchWrtLin(double t) const
+{
+   Jacobian da=base_linear_->GetJacobianWrtNodes(t,kAcc);
+   return m_*da;
+}
+
+NodeSpline::Jacobian
+BaseAccConstraintRangeLin::FillJacobianAngWrenchWrtLin(double t, int k ) const
+{
+  Jac jac1=DerivativeOfrxma(t);
+
+  Jac jac2= Jac(3, jac1.cols());
+  jac2.coeffRef(0,6*k+1)=m_*g_;
+  jac2.coeffRef(1,6*k)=-m_*g_;
+  Jac total_jac=jac1+jac2;
+
+
+  return total_jac;
+}
+
+BaseAccConstraintRangeLin::Jac
+BaseAccConstraintRangeLin::DerivativeOfrxma(double t) const
+{
+  Jacobian dr=base_linear_->GetJacobianWrtNodes(t,kPos);
+  Jacobian da=base_linear_->GetJacobianWrtNodes(t,kAcc);
+  State s=base_linear_->GetPoint(t);
+  Eigen::Vector3d p=s.p();
+  Eigen::Vector3d a=s.a();
+  Jac jac3(3,dr.cols());
+  jac3.row(0)=p.y()*da.row(2)+dr.row(1)*a.z()-p.z()*da.row(1)-dr.row(2)*a.y();
+  jac3.row(1)=p.z()*da.row(0)+dr.row(2)*a.x()-p.x()*da.row(2)-dr.row(0)*a.z();
+  jac3.row(2)=p.x()*da.row(1)+dr.row(0)*a.y()-p.y()*da.row(0)-dr.row(1)*a.x();
+  return jac3;
+}
+
+NodeSpline::Jacobian
+BaseAccConstraintRangeLin::FillJacobianAngWrenchWrtAng(double t) const
+{
+  Eigen::Vector3d acc= base_angular_.GetAngularAccelerationInWorld(t);
+  Eigen::Matrix3d w_R_b = base_angular_.GetRotationMatrixBaseToWorld(t);
+  Jac I_w = w_R_b.sparseView() * I_b * w_R_b.transpose().sparseView();
+
+  // 1st term of product rule (derivative of R)
+  Eigen::Vector3d v11 = I_b*w_R_b.transpose()*acc;
+
+  Jac jac11 = base_angular_.DerivOfRotVecMult(t, v11, false);
+
+  // 2nd term of product rule (derivative of R^T)
+  Jac jac12 = w_R_b.sparseView()*I_b*base_angular_.DerivOfRotVecMult(t, acc, true);
+
+  // 3rd term of product rule (derivative of wd)
+  Jac jac_ang_acc = base_angular_.GetDerivOfAngAccWrtEulerNodes(t);
+  Jac jac13 = I_w * jac_ang_acc;
+
+
+  return jac11 + jac12 + jac13;
 }
 
 

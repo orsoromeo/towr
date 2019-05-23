@@ -12,6 +12,7 @@
 #include "time_discretization_constraint.h"
 #include <towr/constraints/total_duration_constraint.h>
 #include <iostream>
+#include <towr/variables/phase_durations.h>
 namespace towr {
 
 
@@ -20,7 +21,8 @@ public:
 
   Geometry (DynamicModel::Ptr model,
             const HeightMap::Ptr &terrain,
-            const SplineHolder& spline_holder, int numberofleg);
+            const SplineHolder& spline_holder, int numberofleg,
+            const std::vector<std::vector<double>> & phase_durations);
   virtual ~Geometry () = default;
   Eigen::MatrixXd ComputeCone(double t) const;
 
@@ -29,9 +31,12 @@ private:
   int number_of_leg_in_touch_;
   mutable Eigen::MatrixXd  LinearEdges_;
   mutable Eigen::MatrixXd  AngularEdges_;
+  mutable Eigen::MatrixXd  EhatLin_;
+  mutable Eigen::MatrixXd  EhatAng_;
   Eigen::MatrixXd  ComputeLinear_;
   Eigen::Vector3d  base_;
   HeightMap::Ptr terrain_;
+  std::vector<std::vector<double>> phase_durations_;
   mutable std::vector<NodeSpline::Ptr> ee_motion_;
   mutable std::vector<NodeSpline::Ptr> ee_motion_in_touch_;
   mutable DynamicModel::Ptr model_;
