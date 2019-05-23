@@ -115,6 +115,11 @@ public:
   virtual ~Node() = default;
 };
 
+class Nodelambda: public State {
+public:
+  explicit Nodelambda(int dim = 0) : State(dim, 1) {};
+  virtual ~Nodelambda() = default;
+};
 
 /**
  * @brief Can represent the 6Degree-of-Freedom floating base of a robot.

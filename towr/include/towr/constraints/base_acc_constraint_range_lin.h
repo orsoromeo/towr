@@ -39,6 +39,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ifopt/constraint_set.h>
 #include <ifopt/composite.h>
 #include "time_discretization_constraint.h"
+#include "geometry.h"
+#include "derivative.h"
 #include <towr/constraints/total_duration_constraint.h>
 #include <iostream>
 namespace towr {
@@ -63,40 +65,46 @@ public:
                              double dt,
                              const NodeSpline::Ptr& spline,
                              std::string name,
-                             HeightMap::Ptr terrain,
+                             const HeightMap::Ptr &terrain,
                              const SplineHolder& spline_holder,
-                             ifopt::Problem nlp,
-                             std::vector<VecTimes> duration);
+                             int numberoflegs
+                             );
   virtual ~BaseAccConstraintRangeLin () = default;
 
   void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
   void UpdateBoundsAtInstance (double t, int k, VecBound&) const override;
   void UpdateJacobianAtInstance(double t, int k, std::string, Jacobian&) const override;
   std::vector<NodeSpline::Ptr> ee_motion_in_touch_;
+  using Jac = Eigen::SparseMatrix<double, Eigen::RowMajor>;
 private:
+  int numberofleg_;
   std::vector<VecTimes> duration_;
   ifopt::Composite::Ptr variables_;
   int NumberNodes_;
   mutable DynamicModel::Ptr model_;
+  double m_;
   double g_;
+  Eigen::SparseMatrix<double, Eigen::RowMajor> I_b;
   NodeSpline::Ptr base_linear_;
-  NodeSpline::Ptr base_angular_;
+  EulerConverter base_angular_;
+  NodeSpline::Ptr lambda_;
   NodeSpline::Ptr spline_;        ///< a spline comprised of polynomials
   VecBound node_bounds_;
   std::string node_variables_id_;
-  HeightMap::Ptr terrain_;
   std::vector<NodeSpline::Ptr> ee_motion_;
   NodesVariablesPhaseBased::Ptr ee_force_;
   double mu_;
   Eigen::MatrixXd  LinearEdges_;
   Eigen::MatrixXd  AngularEdges_;
   Eigen::Vector3d base_;
-
+  Geometry geom_;
   int GetRow (int node, int dim) const;
   int GetNumberOfFeetInTouch (double t);
-  VectorXd FillConstraint (State com) const;
+  VectorXd FillConstraint (State com, double t) const;
   NodeSpline::Jacobian FillJacobian(NodeSpline::Ptr spline_, double t) const;
-  //Eigen::MatrixXd GetDerivativeWrtNodes (int ee, double t) const;
+  Eigen::Vector3d ComputeLinearWrench (State com) const;
+  Eigen::Vector3d ComputeAngularWrench (Eigen::VectorXd acc, Jac I_w, State com) const;
+  Eigen::VectorXd ComputeWrench (State com, double t) const;
 };
 
 } /* namespace towr */

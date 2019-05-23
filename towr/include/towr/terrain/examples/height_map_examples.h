@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TOWR_TOWR_ROS_INCLUDE_TOWR_ROS_HEIGHT_MAP_EXAMPLES_H_
 
 #include <towr/terrain/height_map.h>
+#include <iostream>
 
 namespace towr {
 
@@ -45,7 +46,7 @@ namespace towr {
 class FlatGround : public HeightMap {
 public:
   FlatGround(double height = 0.0);
-  double GetHeight(double x, double y)  const override { return height_; };
+  double GetHeight(double x, double y)  const override {  return height_; };
 
 private:
   double height_; // [m]
@@ -64,7 +65,8 @@ private:
   double length_     = 3.5;
   double height_     = 0.5; // [m]
 
-  double eps_ = 0.03; // approximate as slope
+  double eps_ =0.001;
+      //0.03; // approximate as slope
   const double slope_ = height_/eps_;
 };
 

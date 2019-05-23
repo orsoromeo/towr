@@ -133,6 +133,7 @@ DynamicConstraint::UpdateModel (double t) const
   for (int ee=0; ee<n_ee; ++ee) {
     ee_force.push_back(ee_forces_.at(ee)->GetPoint(t).p());
     ee_pos.push_back(ee_motion_.at(ee)->GetPoint(t).p());
+
   }
 
   model_->SetCurrent(com.p(), com.a(), w_R_b, omega, omega_dot, ee_force, ee_pos);

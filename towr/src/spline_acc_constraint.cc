@@ -68,6 +68,7 @@ void
 SplineAccConstraint::FillJacobianBlock (std::string var_set, Jacobian& jac) const
 {
   if (var_set == node_variables_id_) {
+
     for (int j=0; j<n_junctions_; ++j) {
       int p_prev = j; // id of previous polynomial
       Jacobian acc_prev = spline_->GetJacobianWrtNodes(p_prev, T_.at(p_prev), kAcc);

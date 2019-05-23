@@ -87,13 +87,13 @@ TEST(TOWR, optimizeTrajectory){
 
           double tot_time = formulation.params_.GetTotalTime();
           formulation.params_.OptimizePhaseDurations();
-          //constraints.push_back(std::make_shared<TotalDurationConstraint>(tot_time, ee_count));
-          //constraints.push_back(std::make_shared<TerrainConstraint>(formulation.terrain_, ee_motion_name));
-          //
+          ////constraints.push_back(std::make_shared<TotalDurationConstraint>(tot_time, ee_count));
+          constraints.push_back(std::make_shared<TerrainConstraint>(formulation.terrain_, ee_motion_name));
+
           ////swing_constraint
-          //constraints.push_back(std::make_shared<SwingConstraint>(id::EEMotionNodes(formulation.params_.GetEECount()-1)));
-          //
-          ////force_constraint
+          constraints.push_back(std::make_shared<SwingConstraint>(id::EEMotionNodes(formulation.params_.GetEECount()-1)));
+
+          //force_constraint
 
           //constraints.push_back(std::make_shared<ForceConstraint>(formulation.terrain_,
           //                                                         formulation.params_.force_limit_in_normal_direction_,
@@ -101,18 +101,17 @@ TEST(TOWR, optimizeTrajectory){
           //
           //spline_acc_constraint
 
-          //constraints.push_back(std::make_shared<SplineAccConstraint>
-          //                      (solution.base_linear_, id::base_lin_nodes)) ;
-          //
-          //constraints.push_back(std::make_shared<SplineAccConstraint>
-          //                      (solution.base_angular_, id::base_ang_nodes)) ;
-          //
-          constraints.push_back(std::make_shared<DynamicConstraint>(formulation.model_.dynamic_model_,
-                                                                  formulation.params_.GetTotalTime(),
-                                                                  formulation.params_.dt_constraint_dynamic_,
-                                                                  solution));
-          // base_acc_range_constraint
+          constraints.push_back(std::make_shared<SplineAccConstraint>
+                                (solution.base_linear_, id::base_lin_nodes)) ;
 
+          constraints.push_back(std::make_shared<SplineAccConstraint>
+                                (solution.base_angular_, id::base_ang_nodes)) ;
+
+          //constraints.push_back(std::make_shared<DynamicConstraint>(formulation.model_.dynamic_model_,
+          //                                                        formulation.params_.GetTotalTime(),
+          //                                                        formulation.params_.dt_constraint_dynamic_,
+          //                                                        solution));
+          // base_acc_range_constraint
 
           constraints.push_back(std::make_shared<BaseAccConstraintRangeLin>(formulation.model_.dynamic_model_,
                                                                             formulation.params_.GetTotalTime(),
@@ -120,8 +119,7 @@ TEST(TOWR, optimizeTrajectory){
                                                                             solution.base_linear_, id::base_lin_nodes,
                                                                             formulation.terrain_,
                                                                             solution,
-                                                                            nlp,
-                                                                            formulation.params_.ee_phase_durations_)) ;
+                                                                            formulation.params_.GetEECount())) ;
 
 
           //constraints.push_back(std::make_shared<BaseAccConstraintRangeAng>(formulation.model_.dynamic_model_,
@@ -130,18 +128,18 @@ TEST(TOWR, optimizeTrajectory){
           //                                                                  solution.base_angular_, solution.base_linear_,
           //                                                                  id::base_ang_nodes)) ;
           //
-          //constraints.push_back(std::make_shared<BaseMotionConstraint>(formulation.params_.GetTotalTime(),
-          //                                                              formulation.params_.GetTotalTime(),
-          //                                                            formulation.params_.dt_constraint_base_motion_,
-          //                                                            solution));
-          //BASE MOTION SEMPRE COMMENTATO!
-
-          //constraints.push_back(std::make_shared<RangeOfMotionConstraint>(formulation.model_.kinematic_model_,
-          //                                                        formulation.params_.GetTotalTime(),
-          //                                                        formulation.params_.dt_constraint_range_of_motion_,
-          //                                                        ee_count,
-          //                                                        solution));
+          ////constraints.push_back(std::make_shared<BaseMotionConstraint>(formulation.params_.GetTotalTime(),
+          ////                                                              formulation.params_.GetTotalTime(),
+          ////                                                            formulation.params_.dt_constraint_base_motion_,
+          ////                                                            solution));
+          ////BASE MOTION SEMPRE COMMENTATO!
           //
+          constraints.push_back(std::make_shared<RangeOfMotionConstraint>(formulation.model_.kinematic_model_,
+                                                                  formulation.params_.GetTotalTime(),
+                                                                  formulation.params_.dt_constraint_range_of_motion_,
+                                                                  ee_count,
+                                                                  solution));
+
 
 
 
@@ -150,6 +148,7 @@ TEST(TOWR, optimizeTrajectory){
 
           for (auto l:constraints)
             nlp.AddConstraintSet(l);
+
           for (auto c : formulation.GetCosts())
           nlp.AddCostSet(c);
 
@@ -191,7 +190,9 @@ TEST(TOWR, optimizeTrajectory){
 
             cout << "Contact force dertivative x,y,z:          \t";
             cout << solution.ee_force_.at(0)->GetPoint(t).v().transpose() << "\t[N/s]" << endl;
-
+            cout << "lambda:   \t";
+            cout << solution.lambda_->GetPoint(t).p().transpose() << endl;
+            cout << solution.lambda_->GetPoint(t).v().transpose() << endl;
 
             bool contact = solution.phase_durations_.at(0)->IsContactPhase(t);
             std::string foot_in_contact = contact? "yes" : "no";

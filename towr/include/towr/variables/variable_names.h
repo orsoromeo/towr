@@ -45,7 +45,7 @@ static const std::string base_ang_nodes    = "base-ang";
 static const std::string ee_motion_nodes   = "ee-motion_";
 static const std::string ee_force_nodes    = "ee-force_";
 static const std::string contact_schedule  = "ee-schedule";
-
+static const std::string lambda_ = "lambda";
 
 static std::string EEMotionNodes(uint ee)
 {

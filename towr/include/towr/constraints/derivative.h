@@ -17,7 +17,7 @@ class Derivative {
 public:
 
   Derivative (
-              HeightMap::Ptr terrain,
+              HeightMap::Ptr & terrain,
               const SplineHolder& spline_holder
             );
   virtual ~Derivative () = default;
@@ -29,8 +29,8 @@ std::vector<NodeSpline::Ptr> ee_motion_;
 std::vector<NodeSpline::Ptr> ee_motion_in_touch_;
 
 NodeSpline::Jacobian GetDerivativeOfNormalWrtNodes (int ee, double t) const;
-Eigen::Vector3d      GetDerivativeofAngleWrtNormal(Eigen::Vector3d normal) const;
-NodeSpline::Jacobian GetDerivativeofAngleWrtNodes(int ee, double t, Eigen::Vector3d normal) const;
+Eigen::Vector3d      GetDerivativeofAngleWrtNormal(Eigen::Vector3d normal, double angle) const;
+NodeSpline::Jacobian GetDerivativeofAngleWrtNodes(int ee, double t, Eigen::Vector3d normal, double angle) const;
 NodeSpline::Jacobian GetDerivativeofLinearEdgeWrtNormal (Eigen::Vector3d normal, double angle, Eigen::Vector3d edge) const;
 NodeSpline::Jacobian GetDerivativeofLinearEdgeWrtNodes(int ee, double t,Eigen::Vector3d normal, double angle, Eigen::Vector3d edge) const;
 NodeSpline::Jacobian GetDerivativeofAngularEdgeWrtNodes(int ee, double t,Eigen::Vector3d normal, double angle, Eigen::Vector3d edge) const;

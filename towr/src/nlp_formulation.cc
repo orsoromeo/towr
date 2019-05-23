@@ -45,6 +45,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <towr/costs/node_cost.h>
 #include <towr/variables/nodes_variables_all.h>
+#include <towr/variables/nodes_variables_lambda.h>
 
 #include <iostream>
 
@@ -77,6 +78,12 @@ NlpFormulation::GetVariableSets (SplineHolder& spline_holder)
   vars.insert(vars.end(), ee_force.begin(), ee_force.end());
 
   auto contact_schedule = MakeContactScheduleVariables();
+
+
+  auto lambda= MakeLambdaVariables();
+  vars.insert(vars.end(), lambda.begin(), lambda.end());
+
+
   // can also just be fixed timings that aren't optimized over, but still added
   // to spline_holder.
   if (params_.IsOptimizeTimings()) {
@@ -84,7 +91,8 @@ NlpFormulation::GetVariableSets (SplineHolder& spline_holder)
   }
 
   // stores these readily constructed spline
-  spline_holder = SplineHolder(base_motion.at(0), // linear
+  spline_holder = SplineHolder(lambda.at(0),
+                               base_motion.at(0), // linear
                                base_motion.at(1), // angular
                                params_.GetBasePolyDurations(),
                                ee_motion,
@@ -199,6 +207,24 @@ NlpFormulation::MakeContactScheduleVariables () const
   return vars;
 }
 
+std::vector<NodesVariables::Ptr>
+NlpFormulation::MakeLambdaVariables () const
+{
+
+  std::vector<NodesVariables::Ptr> vars;
+
+  int n_nodes = params_.GetBasePolyDurations().size() + 1;
+
+  auto spline_lambda = std::make_shared<NodesVariableslambda>(n_nodes, params_.GetEECount()*4, id::lambda_);
+  Eigen::VectorXd a;
+  a.resize(params_.GetEECount()*4);
+  for (int i=0; i<params_.GetEECount()*4; i++)
+    a(i)=2.0;
+  spline_lambda->SetByLinearInterpolation(a ,a, params_.GetTotalTime());
+  vars.push_back(spline_lambda);
+
+  return vars;
+}
 NlpFormulation::ContraintPtrVec
 NlpFormulation::GetConstraints(const SplineHolder& spline_holder, ifopt::Problem nlp) const
 {
@@ -223,8 +249,8 @@ NlpFormulation::GetConstraint (Parameters::ConstraintName name,
     case Parameters::Force:                       return MakeForceConstraint();
     case Parameters::Swing:                       return MakeSwingConstraint();
     case Parameters::BaseAcc:                     return MakeBaseAccConstraint(s);
-    case Parameters::BaseAccConstraintValueLin:   return MakeBaseAccConstraintValueLin(s,nlp);
-    case Parameters::BaseAccConstraintValueAng:   return MakeBaseAccConstraintValueAng(s);
+    //case Parameters::BaseAccConstraintValueLin:   return MakeBaseAccConstraintValueLin(s,nlp);
+    //case Parameters::BaseAccConstraintValueAng:   return MakeBaseAccConstraintValueAng(s);
     default: throw std::runtime_error("constraint not defined!");
   }
 }
@@ -342,8 +368,7 @@ NlpFormulation::MakeBaseAccConstraintValueLin (const SplineHolder& s, ifopt::Pro
                                                                     s.base_linear_, id::base_lin_nodes,
                                                                     terrain_,
                                                                     s,
-                                                                    nlp,
-                                                                    params_.ee_phase_durations_));
+                                                                    params_.GetEECount()));
 
 
       return constraints;
@@ -364,16 +389,17 @@ NlpFormulation::ContraintPtrVec
 NlpFormulation::GetCosts() const
 {
   ContraintPtrVec costs;
+  std::cout<<params_.costs_.size()<<std::endl;
   for (const auto& pair : params_.costs_)
+   { std::cout<<pair.second<<std::endl;
     for (auto c : GetCost(pair.first, pair.second))
-      costs.push_back(c);
-
+      costs.push_back(c);}
   return costs;
 }
 
 NlpFormulation::CostPtrVec
 NlpFormulation::GetCost(const Parameters::CostName& name, double weight) const
-{
+{std::cout<<"a"<<std::endl;
   switch (name) {
     case Parameters::ForcesCostID:   return MakeForcesCost(weight);
     case Parameters::EEMotionCostID: return MakeEEMotionCost(weight);

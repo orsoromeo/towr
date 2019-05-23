@@ -19,30 +19,30 @@ class Geometry {
 public:
 
   Geometry (DynamicModel::Ptr model,
-            HeightMap::Ptr terrain,
-            const SplineHolder& spline_holder);
+            const HeightMap::Ptr &terrain,
+            const SplineHolder& spline_holder, int numberofleg);
   virtual ~Geometry () = default;
-
+  Eigen::MatrixXd ComputeCone(double t) const;
 
 private:
-
-  Eigen::MatrixXd  LinearEdges_;
-  Eigen::MatrixXd  AngularEdges_;
+  int numberoflegs_;
+  int number_of_leg_in_touch_;
+  mutable Eigen::MatrixXd  LinearEdges_;
+  mutable Eigen::MatrixXd  AngularEdges_;
+  Eigen::MatrixXd  ComputeLinear_;
   Eigen::Vector3d  base_;
-  HeightMap::Ptr   terrain_;
-  std::vector<NodeSpline::Ptr> ee_motion_;
-  std::vector<NodeSpline::Ptr> ee_motion_in_touch_;
+  HeightMap::Ptr terrain_;
+  mutable std::vector<NodeSpline::Ptr> ee_motion_;
+  mutable std::vector<NodeSpline::Ptr> ee_motion_in_touch_;
   mutable DynamicModel::Ptr model_;
-  int GetNumberOfFeetInTouch (double t);
-  Eigen::MatrixXd ReturnNormalTerrain (double t);
-  Eigen::MatrixXd ReturnTangentTerrain(double t);
+  int GetNumberOfFeetInTouch (double t) const;
+  Eigen::MatrixXd ReturnNormalTerrain (double t) const ;
   Eigen::Matrix3d RotationMatrix (Eigen::Vector3d t, double angle) const;
   Eigen::Vector3d ComputeNextEdge (Eigen::Matrix3d M, Eigen::Vector3d n) const;
-  void ComputeCone (double t);
-  Eigen::MatrixXd ComputeLinearPartOfTheCone (Eigen::Vector3d axis, double angle);
-  Eigen::MatrixXd ComputeAngularPartOfTheCone (double t, Eigen::Vector3d axis, double anglem, double ee);
-  Eigen::Matrix3d RotationX (double angle) const;
-  Eigen::Matrix3d RotationZ (double angle) const;
+  Eigen::MatrixXd ComputeLinearPartOfTheCone(const Eigen::Vector3d &axis, const double &angle) const;
+  Eigen::MatrixXd ComputeAngularPartOfTheCone (double t, Eigen::Vector3d axis, double anglem, double ee) const;
+  Eigen::Matrix3d RotationX (const double &angle) const;
+  Eigen::Matrix3d RotationZ (const double &angle) const;
   double ComputeRotationAngle (Eigen::Vector3d normal) const;
 
   

@@ -110,7 +110,7 @@ private:
   std::vector<NodesVariablesPhaseBased::Ptr> MakeEndeffectorVariables() const;
   std::vector<NodesVariablesPhaseBased::Ptr> MakeForceVariables() const;
   std::vector<PhaseDurations::Ptr> MakeContactScheduleVariables() const;
-
+  std::vector<NodesVariables::Ptr> MakeLambdaVariables() const;
   // constraints
   ContraintPtrVec GetConstraint(Parameters::ConstraintName name,
                                 const SplineHolder& splines, ifopt::Problem nlp) const;

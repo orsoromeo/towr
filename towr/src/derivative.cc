@@ -2,8 +2,7 @@
 
 namespace towr {
 
-Derivative::Derivative (
-                        HeightMap::Ptr terrain,
+Derivative::Derivative (HeightMap::Ptr &terrain,
                         const SplineHolder& spline_holder
                          )
 {
@@ -40,22 +39,22 @@ NodeSpline::Jacobian Derivative::GetDerivativeOfNormalWrtNodes (int ee, double t
   //NodeSpline::Jacobian jac1(3, ee_motion_.at(ee)->GetJacobianWrtNodes(t,kPos).cols());
   //NodeSpline::Jacobian jac1=jac.sparseView();
 }
-Eigen::Vector3d Derivative::GetDerivativeofAngleWrtNormal(Eigen::Vector3d normal) const
-{
+Eigen::Vector3d Derivative::GetDerivativeofAngleWrtNormal(Eigen::Vector3d normal, double angle) const
+{//manca l'arcocoseno!
   Eigen::Vector3d jac;
   double Normx=sqrt(normal.norm());
   double norm3=std::pow(Normx,3);
   jac(0)=-normal(0)*normal(2)/(norm3);
   jac(1)=-normal(1)*normal(2)/(norm3);
   jac(2)=-std::pow(normal(2),2)/(norm3);
-  return jac;
+  return jac * (1/sqrt(1-std::pow(angle,2)));
 
 }
 
-NodeSpline::Jacobian Derivative::GetDerivativeofAngleWrtNodes(int ee, double t, Eigen::Vector3d normal) const
+NodeSpline::Jacobian Derivative::GetDerivativeofAngleWrtNodes(int ee, double t, Eigen::Vector3d normal,double angle) const
 {
   NodeSpline::Jacobian jac=GetDerivativeOfNormalWrtNodes(ee,t);
-  Eigen::Vector3d dang=GetDerivativeofAngleWrtNormal(normal);
+  Eigen::Vector3d dang=GetDerivativeofAngleWrtNormal(normal,angle);
   NodeSpline::Jacobian jac1=dang.sparseView()*jac;
   return jac1;
 }
@@ -67,7 +66,7 @@ NodeSpline::Jacobian Derivative::GetDerivativeofLinearEdgeWrtNormal (Eigen::Vect
    auto ny=normal(1);
    auto ca=cos(angle);
    auto sa=sin(angle);
-   auto da=GetDerivativeofAngleWrtNormal(normal);
+   auto da=GetDerivativeofAngleWrtNormal(normal,angle);
    auto dax=da(0);
    auto day=da(1);
    auto daz=da(2);

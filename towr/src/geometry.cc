@@ -16,53 +16,50 @@
 namespace towr {
 
 Geometry::Geometry (DynamicModel::Ptr model,
-                    HeightMap::Ptr terrain,
-                    const SplineHolder& spline_holder
+                    const HeightMap::Ptr & terrain,
+                    const SplineHolder& spline_holder,
+                    int numberofleg
                     )
 {
-
+  numberoflegs_=numberofleg;
   model_=model;
   terrain_=terrain;
   ee_motion_=spline_holder.ee_motion_;
   base_ << 0.0, 0.0, 1.0;
+  LinearEdges_.resize(4*numberofleg,3);
+  AngularEdges_.resize(4*numberofleg,3);
+
 
 }
 
-int Geometry::GetNumberOfFeetInTouch (double t)
+int Geometry::GetNumberOfFeetInTouch (double t) const
 {
-  LinearEdges_(4*GetNumberOfFeetInTouch (t),3);
-  AngularEdges_(4*GetNumberOfFeetInTouch (t),3);
-  for (int ee=0; model_->GetEECount(); ee++)
-   { Eigen::Vector3d p = ee_motion_.at(ee)->GetPoint(t).p();
-     if (p.z()==terrain_->GetHeight(p.x(),p.y()))
+  int i=0;
+  for (int ee=0; ee<numberoflegs_; ee++)
+   {
+    Eigen::Vector3d p = ee_motion_.at(ee)->GetPoint(t).p();
+     if (p.z()-terrain_->GetHeight(p.x(),p.y())<1e-6)
       {
        ee_motion_in_touch_.push_back(ee_motion_.at(ee));
+       i++;
       }
-  return ee_motion_in_touch_.size();
   }
+  return i;
 }
-// questa parte viene da cone.cc
-Eigen::MatrixXd Geometry::ReturnNormalTerrain (double t)
+
+Eigen::MatrixXd Geometry::ReturnNormalTerrain (double t) const
 {
 
   Eigen::MatrixXd n(GetNumberOfFeetInTouch (t),3);
   for (int ee=0; ee<GetNumberOfFeetInTouch (t); ee++)
-  {Eigen::Vector3d p = ee_motion_in_touch_.at(ee)->GetPoint(t).p();
+  {
+    Eigen::Vector3d p = ee_motion_in_touch_.at(ee)->GetPoint(t).p();
    n.row(ee)= terrain_->GetNormalizedBasis(HeightMap::Normal, p.x(), p.y());
-  }
 
+  }
  return n;
 }
 
-Eigen::MatrixXd Geometry::ReturnTangentTerrain (double t)
-{
- Eigen::MatrixXd tang (GetNumberOfFeetInTouch (t),3);
- for (int ee=0; ee<GetNumberOfFeetInTouch (t); ee++)
-  {   Eigen::Vector3d p = ee_motion_in_touch_.at(ee)->GetPoint(t).p();
-      tang.row(ee) = terrain_->GetNormalizedBasis(HeightMap::Tangent1, p.x(), p.y());
-  }
- return tang;
-}
 
 Eigen::Matrix3d Geometry::RotationMatrix (Eigen::Vector3d t, double angle) const
 
@@ -81,71 +78,80 @@ Eigen::Vector3d Geometry::ComputeNextEdge (Eigen::Matrix3d M, Eigen::Vector3d n)
   Eigen::Vector3d edge=M*n;
   return edge;
 }
-void Geometry::ComputeCone (double t)
+
+Eigen::MatrixXd Geometry::ComputeCone (double t) const
 {
-
-
+  LinearEdges_.setZero();
+  AngularEdges_.setZero();
   for (int ee=0; ee<GetNumberOfFeetInTouch (t); ee++)
    {
     Eigen::Vector3d normal=ReturnNormalTerrain(t).row(ee);
     Eigen::Vector3d axis;
     axis<< normal(1), -normal(0), 0.0;
     double angle= ComputeRotationAngle(normal);
-    LinearEdges_.middleRows(ee,4)=ComputeLinearPartOfTheCone(axis,angle);
-    AngularEdges_.middleRows(ee,4)=ComputeAngularPartOfTheCone(t,axis,angle,ee);
-    }
+    Eigen::MatrixXd tmp = ComputeLinearPartOfTheCone(axis,angle);
+    for (int i=0; i<4; i++)
+     { LinearEdges_.block(4*ee,0,4,3).row(i)= tmp.row(i);
+       AngularEdges_.block(4*ee,0,4,3).row(i)=ComputeAngularPartOfTheCone(t,axis,angle,ee).row(i); }
+   }
+    Eigen::MatrixXd Edges(4*numberoflegs_,6);
+    Edges.block(0,0,4*numberoflegs_,3)=LinearEdges_;
+    Edges.block(0,3,4*numberoflegs_,3)=AngularEdges_;
+    return Edges.transpose();
+
+
 
 }
 
-Eigen::MatrixXd Geometry::ComputeLinearPartOfTheCone (Eigen::Vector3d axis, double angle)
+Eigen::MatrixXd
+Geometry::ComputeLinearPartOfTheCone (const Eigen::Vector3d& axis, const double & angle) const
 {
-  Eigen::MatrixXd E;
-  Eigen::MatrixXd LinearEdges;
-  for (int i; i<4; i++)
+  Eigen::MatrixXd E; E.resize(4,3); E.setZero();
+  Eigen::MatrixXd LinearEdges; LinearEdges.resize(4,3); LinearEdges.setZero();
+  for (int i=0; i<4; i++)
   {
-    E.row(i)=ComputeNextEdge(RotationZ(PI/4+i*PI/2)*RotationX(20),base_); //gli angoli vanno in radianti
+    E.row(i)=ComputeNextEdge(RotationZ(PI/4+(double)i*PI/2)*RotationX(20*PI/180),base_);
     LinearEdges.row(i)=ComputeNextEdge(RotationMatrix(axis,angle),E.row(i));
   }
+
   return LinearEdges;
 }
 
-Eigen::MatrixXd Geometry::ComputeAngularPartOfTheCone (double t, Eigen::Vector3d axis, double angle,double ee)
+Eigen::MatrixXd Geometry::ComputeAngularPartOfTheCone (double t, Eigen::Vector3d axis, double angle,double ee) const
 {
 
-  Eigen::MatrixXd AngularEdges;
+  Eigen::MatrixXd AngularEdges(4,3);
   Eigen::Vector3d p = ee_motion_in_touch_.at(ee)->GetPoint(t).p();
   for (int i=0; i<4; i++)
     {
-      Eigen::Vector3d row=LinearEdges_.row(i);
+      Eigen::Vector3d row=LinearEdges_.row(4*ee+i);
       AngularEdges.row(i)=p.cross(row);
-
-
-     }
+    }
    return AngularEdges;
 }
 
 
-Eigen::Matrix3d Geometry::RotationX (double angle) const
+Eigen::Matrix3d Geometry::RotationX (const double& angle) const
 
 {
   double cmu=cos(angle);
   double smu=sin(angle);
-  Eigen::Matrix3d M;
-  M(0,0)=1;
+  Eigen::Matrix3d M; M.setZero();
+  M(0,0)=1.0;
   M(1,1)=cmu;     M(1,2)=-smu;
   M(2,1)=smu;     M(2,2)=cmu;
   return M;
 }
 
-Eigen::Matrix3d Geometry::RotationZ (double angle) const
+Eigen::Matrix3d Geometry::RotationZ (const double& angle) const
 
 {
   double cmu=cos(angle);
   double smu=sin(angle);
-  Eigen::Matrix3d M;
+  Eigen::Matrix3d M; M.setZero();
   M(0,0)=cmu;     M(0,1)=-smu;
   M(1,0)=smu;     M(1,1)=cmu;
-  M(2,2)=1;
+  M(2,2)=1.0;
   return M;
 }
 

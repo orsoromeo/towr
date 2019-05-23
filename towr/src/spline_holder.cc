@@ -32,7 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace towr{
 
-SplineHolder::SplineHolder (NodesVariables::Ptr base_lin_nodes,
+SplineHolder::SplineHolder (NodesVariables::Ptr lambda,
+                            NodesVariables::Ptr base_lin_nodes,
                             NodesVariables::Ptr base_ang_nodes,
                             const std::vector<double>& base_poly_durations,
                             std::vector<NodesVariablesPhaseBased::Ptr> ee_motion_nodes,
@@ -42,13 +43,14 @@ SplineHolder::SplineHolder (NodesVariables::Ptr base_lin_nodes,
 {
   base_linear_  = std::make_shared<NodeSpline>(base_lin_nodes.get(), base_poly_durations);
   base_angular_ = std::make_shared<NodeSpline>(base_ang_nodes.get(), base_poly_durations);
+  lambda_=        std::make_shared<NodeSpline>(lambda.get(), base_poly_durations);
   phase_durations_ = phase_durations;
 
   for (uint ee=0; ee<ee_motion_nodes.size(); ++ee) {
     if (durations_change) {
       // spline that changes the polynomial durations (affects Jacobian)
       ee_motion_.push_back(std::make_shared<PhaseSpline>(ee_motion_nodes.at(ee), phase_durations.at(ee).get()));
-      ee_force_.push_back(std::make_shared<PhaseSpline>(ee_force_nodes.at(ee), phase_durations.at(ee).get()));
+      ee_force_. push_back(std::make_shared<PhaseSpline>(ee_force_nodes.at(ee), phase_durations.at(ee).get()));
     } else {
       // spline without changing the polynomial durations
       auto ee_motion_poly_durations = ee_motion_nodes.at(ee)->ConvertPhaseToPolyDurations(phase_durations.at(ee)->GetPhaseDurations());
