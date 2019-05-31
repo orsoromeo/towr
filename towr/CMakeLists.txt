@@ -4,7 +4,11 @@ project(towr VERSION 1.3.2)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 find_package(ifopt 2.0.1 REQUIRED)
 
-
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+#set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+#set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+#set (ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer) 
+#set (ASAN_OPTIONS=symbolize=true)
 ###########
 ## Build ##
 ###########
@@ -27,6 +31,7 @@ add_library(${PROJECT_NAME} SHARED
   src/nodes_variables_all.cc
   src/nodes_variables_phase_based.cc
   src/phase_durations.cc
+  src/nodes_variables_lambda.cc
   # models
   src/robot_model.cc
   src/dynamic_model.cc
@@ -109,9 +114,13 @@ enable_testing()
 find_package(GTest QUIET)
 if (TARGET GTest::GTest) # only build when modern targets exists
   add_executable(${PROJECT_NAME}-test
+    test/compute_wrench_test.cc
+
     test/single_hop_example_test.cc
     test/phase_nodes_test.cc
     test/dynamic_model_test.cc
+    test/derivative_test.cc
+    
   )
   target_link_libraries(${PROJECT_NAME}-test
     PRIVATE

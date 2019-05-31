@@ -68,7 +68,9 @@ public:
                              const HeightMap::Ptr &terrain,
                              const SplineHolder& spline_holder,
                              int numberoflegs,
-                             const std::vector<std::vector<double>> &phase_durations);
+                             const std::vector<std::vector<double>> &phase_durations,
+                             Geometry & geom,
+                             Derivative & der);
   virtual ~BaseAccConstraintRangeLin () = default;
 
   void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
@@ -76,7 +78,13 @@ public:
   void UpdateJacobianAtInstance(double t, int k, std::string, Jacobian&) const override;
   std::vector<NodeSpline::Ptr> ee_motion_in_touch_;
   using Jac = Eigen::SparseMatrix<double, Eigen::RowMajor>;
+  Eigen::VectorXd ComputeWrench (State com, double t) const;
+  VectorXd FillConstraint (State com, double t) const;
+  NodeSpline::Jacobian FillJacobianLinWrenchWrtEENodes(double t, int ee) const;
+  NodeSpline::Jacobian FillJacobianAngWrenchWrtEENodes(double t, int ee) const;
+    NodeSpline::Jacobian FillJacobianEdgesWrtLambda (double t, int k) const;
 private:
+  std::vector<std::vector<double>> phase_durations_;
   int numberofleg_;
   std::vector<VecTimes> duration_;
   ifopt::Composite::Ptr variables_;
@@ -97,20 +105,20 @@ private:
   Eigen::MatrixXd  LinearEdges_;
   Eigen::MatrixXd  AngularEdges_;
   Eigen::Vector3d base_;
-  Geometry geom_;
-  Derivative der_;
+  Geometry & geom_;
+  Derivative & der_;
   int GetRow (int node, int dim) const;
   int GetNumberOfFeetInTouch (double t);
-  VectorXd FillConstraint (State com, double t) const;
   NodeSpline::Jacobian FillJacobian(NodeSpline::Ptr spline_, double t) const;
   Eigen::Vector3d ComputeLinearWrench (State com) const;
   Eigen::Vector3d ComputeAngularWrench (Eigen::VectorXd acc, Jac I_w, State com) const;
-  Eigen::VectorXd ComputeWrench (State com, double t) const;
 
   NodeSpline::Jacobian FillJacobianLinWrenchWrtLin(double t) const;
   NodeSpline::Jacobian FillJacobianAngWrenchWrtLin(double t, int k ) const;
   BaseAccConstraintRangeLin::Jac DerivativeOfrxma(double t) const;
   NodeSpline::Jacobian FillJacobianAngWrenchWrtAng(double t) const;
+  bool IsInTouch(double t, int ee) const;
+
 };
 
 } /* namespace towr */

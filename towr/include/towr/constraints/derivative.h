@@ -16,25 +16,24 @@ namespace towr {
 class Derivative {
 public:
 
-  Derivative (
-              const HeightMap::Ptr & terrain,
-              const SplineHolder& spline_holder
-            );
+  Derivative (const HeightMap::Ptr & terrain,
+              const SplineHolder& spline_holder, int numberofleg, const std::vector<std::vector<double> > &phase_durations);
   virtual ~Derivative () = default;
-
+  NodeSpline::Jacobian GetDerivativeofLinearEdgeWrtNodes(int ee, double t,Eigen::Vector3d normal, double angle, Eigen::Vector3d edge) const;
+  NodeSpline::Jacobian GetDerivativeofAngularEdgeWrtNodes(int ee, double t, Eigen::Vector3d normal, double angle, Eigen::Vector3d edge, Eigen::Vector3d edges) const;
+  mutable std::vector<NodeSpline::Ptr> ee_motion_in_touch_;
+  void GetNumberOfFeetInTouch (double t) const;
 private:
 Eigen::Vector3d  base_;
 HeightMap::Ptr   terrain_;
-std::vector<NodeSpline::Ptr> ee_motion_;
-std::vector<NodeSpline::Ptr> ee_motion_in_touch_;
-
+mutable std::vector<NodeSpline::Ptr> ee_motion_;
+std::vector<std::vector<double>> phase_durations_;
+int numberoflegs_;
 NodeSpline::Jacobian GetDerivativeOfNormalWrtNodes (int ee, double t) const;
 Eigen::Vector3d      GetDerivativeofAngleWrtNormal(Eigen::Vector3d normal, double angle) const;
 NodeSpline::Jacobian GetDerivativeofAngleWrtNodes(int ee, double t, Eigen::Vector3d normal, double angle) const;
 NodeSpline::Jacobian GetDerivativeofLinearEdgeWrtNormal (Eigen::Vector3d normal, double angle, Eigen::Vector3d edge) const;
-NodeSpline::Jacobian GetDerivativeofLinearEdgeWrtNodes(int ee, double t,Eigen::Vector3d normal, double angle, Eigen::Vector3d edge) const;
-NodeSpline::Jacobian GetDerivativeofAngularEdgeWrtNodes(int ee, double t,Eigen::Vector3d normal, double angle, Eigen::Vector3d edge) const;
-  
+Eigen::MatrixXd      GetDerivativeofRotationAxisWrtNormal(Eigen::Vector3d vector) const;
 };
 
 } /* namespace towr */

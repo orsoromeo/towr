@@ -113,6 +113,14 @@ TEST(TOWR, optimizeTrajectory){
           //                                                        solution));
           // base_acc_range_constraint
 
+          Geometry geom(formulation.model_.dynamic_model_,
+                         formulation.terrain_,
+                         solution,
+                         1,
+                       formulation.params_.ee_phase_durations_);
+
+          Derivative der(formulation.terrain_, solution, 1, formulation.params_.ee_phase_durations_);
+
           constraints.push_back(std::make_shared<BaseAccConstraintRangeLin>(formulation.model_.dynamic_model_,
                                                                             formulation.params_.GetTotalTime(),
                                                                             formulation.params_.dt_constraint_base_acc_,
@@ -120,7 +128,9 @@ TEST(TOWR, optimizeTrajectory){
                                                                             formulation.terrain_,
                                                                             solution,
                                                                             formulation.params_.GetEECount(),
-                                                                            formulation.params_.ee_phase_durations_)) ;
+                                                                            formulation.params_.ee_phase_durations_,
+                                                                            geom,
+                                                                            der)) ;
 
 
           //constraints.push_back(std::make_shared<BaseAccConstraintRangeAng>(formulation.model_.dynamic_model_,
@@ -186,11 +196,11 @@ TEST(TOWR, optimizeTrajectory){
             cout << "Foot velocity x,y,z:          \t";
             cout << solution.ee_motion_.at(0)->GetPoint(t).v().transpose() << "\t[m/s]" << endl;
 
-            cout << "Contact force x,y,z:          \t";
-            cout << solution.ee_force_.at(0)->GetPoint(t).p().transpose() << "\t[N]" << endl;
+            //cout << "Contact force x,y,z:          \t";
+            //cout << solution.ee_force_.at(0)->GetPoint(t).p().transpose() << "\t[N]" << endl;
 
-            cout << "Contact force dertivative x,y,z:          \t";
-            cout << solution.ee_force_.at(0)->GetPoint(t).v().transpose() << "\t[N/s]" << endl;
+            //cout << "Contact force dertivative x,y,z:          \t";
+            //cout << solution.ee_force_.at(0)->GetPoint(t).v().transpose() << "\t[N/s]" << endl;
             cout << "lambda:   \t";
             cout << solution.lambda_->GetPoint(t).p().transpose() << endl;
             cout << solution.lambda_->GetPoint(t).v().transpose() << endl;

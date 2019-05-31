@@ -55,10 +55,15 @@ BaseAccConstraintRangeLin::BaseAccConstraintRangeLin (const DynamicModel::Ptr& m
                                                       const HeightMap::Ptr& terrain,
                                                       const SplineHolder& spline_holder,
                                                       int numberofleg,
-                                                      const std::vector<std::vector<double>>& phase_durations)
-    :TimeDiscretizationConstraint(T, dt, "baseAccConstraintValueLin-"), geom_(model_,terrain, spline_holder, numberofleg, phase_durations), der_(terrain, spline_holder)
+                                                      const std::vector<std::vector<double>>& phase_durations,
+                                                      Geometry & geom,
+                                                      Derivative & der)
+    :TimeDiscretizationConstraint(T, dt, "baseAccConstraintValueLin-"), geom_(geom),
+                                                                        der_(der)
 
 {
+
+ phase_durations_=phase_durations;
  numberofleg_=numberofleg;
  model_=model;
  node_variables_id_=node_variable_name;
@@ -83,7 +88,7 @@ BaseAccConstraintRangeLin::UpdateConstraintAtInstance (double t, int k,
 
   if (k<NumberNodes_)
   {
-
+     // std::cout<<"update constraint"<<std::endl;
     auto com=base_linear_->GetPoint(t);
     g.middleRows(GetRow(k, 0), 6) =FillConstraint(com,t);
 
@@ -113,6 +118,8 @@ BaseAccConstraintRangeLin::UpdateJacobianAtInstance (double t, int k,
 
     if (var_set==id::base_lin_nodes)
      {
+
+
       jac.middleRows(6*k,3)=FillJacobianLinWrenchWrtLin(t);
       jac.middleRows(6*k+3,3)=FillJacobianAngWrenchWrtLin(t,k);
      }
@@ -120,14 +127,30 @@ BaseAccConstraintRangeLin::UpdateJacobianAtInstance (double t, int k,
      {
       jac.middleRows(6*k+3,3)=FillJacobianAngWrenchWrtAng(t);
      }
+    for (int ee=0; ee<model_->GetEECount(); ee++)
+    if (var_set == id::EEMotionNodes(ee))
+     {
+      if (geom_.IsInTouch(t,ee))
+      {
+        geom_.ComputeCone(t);
+        jac.middleRows(6*k,3)=FillJacobianLinWrenchWrtEENodes(t,ee);
+        jac.middleRows(6*k+3,3)=FillJacobianAngWrenchWrtEENodes(t,ee);
+
+      }
 
 
+     }
 
-      //spline_->GetJacobianWrtNodes(k,0.1, kAcc);
-      //std::cout<<"lin "<<std::endl;
-      //std::cout<<jac<<std::endl;
+   if (var_set == id::lambda_)
+    {
+     geom_.ComputeCone(t);
+     //jac.middleRows(6*k,6)=FillJacobianEdgesWrtLambda(t,k);
+
+
+    }
 
    }
+
 
 }
 int
@@ -138,6 +161,7 @@ BaseAccConstraintRangeLin::GetRow (int node, int dim) const
 Eigen::VectorXd
 BaseAccConstraintRangeLin::FillConstraint (State com, double t) const
  {
+  //std::cout<<"fill constraint"<<std::endl;
   VectorXd g;
   g.resize(6);
   g=ComputeWrench(com,t);
@@ -161,9 +185,9 @@ BaseAccConstraintRangeLin::ComputeAngularWrench (Eigen::VectorXd acc, Jac I_w, S
   auto Iwacc=I_w*acc;
   Eigen::Vector3d rp=com.p();
   Eigen::Vector3d ra=com.a();
-  auto rmg=rp.cross(m_*(Eigen::Vector3d (0.0, 0.0, g_)));
+  auto rmg=rp.cross(m_*(Eigen::Vector3d (0.0, 0.0, -g_)));
   Eigen::Vector3d rma=rp.cross(m_*ra);
-  Eigen::Vector3d ang_wrench=Iwacc+rmg+rma;
+  Eigen::Vector3d ang_wrench=Iwacc-rmg+rma;
   return ang_wrench;
  }
 
@@ -237,6 +261,83 @@ BaseAccConstraintRangeLin::FillJacobianAngWrenchWrtAng(double t) const
 
 
   return jac11 + jac12 + jac13;
+}
+
+NodeSpline::Jacobian
+BaseAccConstraintRangeLin::FillJacobianLinWrenchWrtEENodes(double t, int ee) const
+{
+  //std::cout<<geom_.LinearEdges_<<std::endl;
+  Jac jac;
+  //for (int ee=0; ee<geom_.LinearEdges_.rows()/4; ee++) //non serve perchè la gamba è gia scelta
+  //{
+    for (int i=0; i<4; i++)
+    {
+
+       Jac jac1=der_.GetDerivativeofLinearEdgeWrtNodes(ee,t,geom_.normal_.row(ee), geom_.angle_(ee), geom_.EhatLin_.row(4*ee+i));
+       auto lambda=lambda_->GetPoint(t).p();
+      double lambda2=lambda(4*ee+i);
+      Jac jac2(3,jac1.cols());
+      for (int i=0; i<3;i++)
+       jac2.row(i)=lambda2*jac1.row(i);
+     jac.resize(3,jac1.cols());
+     jac=jac+jac2;
+    }
+  //}
+  //std::cout<<t<<std::endl;
+  //std::cout<<jac<<std::endl;
+  return -jac;
+}
+
+NodeSpline::Jacobian
+BaseAccConstraintRangeLin::FillJacobianAngWrenchWrtEENodes(double t, int ee) const
+{
+  auto p=ee_motion_.at(0)->GetJacobianWrtNodes(t,kPos);
+  Jac jac(3,p.cols());
+  //for (int ee=0; ee<geom_.LinearEdges_.rows()/4; ee++)
+  //{
+    for (int i=0; i<4; i++)
+    {
+
+      Jac jac1=der_.GetDerivativeofAngularEdgeWrtNodes(ee,t,geom_.normal_.row(ee), geom_.angle_(ee), geom_.EhatLin_.row(4*ee+i), geom_.LinearEdges_.row(4*ee+i));
+
+      auto lambda=lambda_->GetPoint(t).p();
+      double lambda2=lambda(4*ee+i);
+      Jac jac2(3,jac1.cols());
+
+      for (int i=0; i<3;i++)
+       jac2.row(i)=lambda2*jac1.row(i);
+
+     jac=jac-jac2;
+
+
+
+    }
+   //}
+
+ // std::cout<<t<<std::endl;
+ // std::cout<<"aaa "<<jac<<std::endl;
+ return jac;
+}
+
+NodeSpline::Jacobian
+BaseAccConstraintRangeLin::FillJacobianEdgesWrtLambda (double t,int k) const
+{
+  Jac jac1=lambda_->GetJacobianWrtNodes(t,kPos);
+  Eigen::MatrixXd edge;
+  edge.resize(6,4*geom_.numberoflegs_);
+  edge=geom_.ComputeCone(t);
+
+   std::cout<<" t "<<t<<std::endl;
+
+  Eigen::MatrixXd jac2(6,jac1.cols());
+  jac2.setZero();
+  for (int i=0; i<6; i++)
+   {
+     jac2.block(0,8*geom_.numberoflegs_*k,6,4*geom_.numberoflegs_).row(i)=edge.row(i);
+
+  }
+
+  return jac2.sparseView();
 }
 
 

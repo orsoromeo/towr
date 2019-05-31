@@ -136,11 +136,11 @@ public:
    * @brief Identifiers to be used to add certain constraints to the
    * optimization problem.
    */
-  enum ConstraintName { Dynamic,                     ///< sets DynamicConstraint
+  enum ConstraintName { //Dynamic,                     ///< sets DynamicConstraint
                         EndeffectorRom,              ///< sets RangeOfMotionConstraint
                         TotalTime,                   ///< sets TotalDurationConstraint
                         Terrain,                     ///< sets TerrainConstraint
-                        Force,                       ///< sets ForceConstraint
+                        //Force,                       ///< sets ForceConstraint
                         Swing,                       ///< sets SwingConstraint
                         BaseRom,                     ///< sets BaseMotionConstraint
                         BaseAcc,                     ///< sets SplineAccConstraint

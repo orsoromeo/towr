@@ -95,9 +95,11 @@ void
 TimeDiscretizationConstraint::FillJacobianBlock (std::string var_set,
                                                   Jacobian& jac) const
 {
+
   int k = 0;
   for (double t : dts_){
-    UpdateJacobianAtInstance(t, k++, var_set, jac);}
+    UpdateJacobianAtInstance(t, k++, var_set, jac);
+  }
 
 }
 
