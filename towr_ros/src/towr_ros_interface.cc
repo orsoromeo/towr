@@ -35,10 +35,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <xpp_msgs/topic_names.h>
 #include <xpp_msgs/TerrainInfo.h>
 
+#include <dwl_msgs/WholeBodyStateInterface.h>
+#include </home/misc_ws/src/dwl/dwl/dwl/WholeBodyState.h>
+
 #include <towr/terrain/height_map.h>
 #include <towr/variables/euler_converter.h>
 #include <towr_ros/topic_names.h>
 #include <towr_ros/towr_xpp_ee_map.h>
+
 
 
 namespace towr {
@@ -56,6 +60,10 @@ TowrRosInterface::TowrRosInterface ()
 
   robot_parameters_pub_  = n.advertise<xpp_msgs::RobotParameters>
                                     (xpp_msgs::robot_parameters, 1);
+
+  trajectory_ = n.advertise<xpp_msgs::RobotStateCartesianTrajectory>("/xpp/trajectory_des",1);
+
+  dwltrajectory_=n.advertise<dwl_msgs::WholeBodyTrajectory>("hyq/plan",1);
 
   solver_ = std::make_shared<ifopt::IpoptSolver>();
 
@@ -127,7 +135,12 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
   }
 
   // to publish entire trajectory (e.g. to send to controller)
-  // xpp_msgs::RobotStateCartesianTrajectory xpp_msg = xpp::Convert::ToRos(GetTrajectory());
+  xpp_msgs::RobotStateCartesianTrajectory xpp_msg = xpp::Convert::ToRos(GetTrajectory());
+
+  //dwl_msgs::WholeBodyTrajectory wbtraj = ToRos(GetTrajectory());
+
+  trajectory_.publish(xpp_msg);
+  //dwltrajectory_.publish(wbtraj);
 }
 
 void
@@ -271,6 +284,58 @@ TowrRosInterface::SaveTrajectoryInRosbag (rosbag::Bag& bag,
 
     bag.write(xpp_msgs::terrain_info, timestamp, terrain_msg);
   }
+}
+
+dwl::WholeBodyTrajectory TowrRosInterface::ToRos()
+{
+  //EulerConverter base_angular(solution.base_angular_);
+  //dwl::WholeBodyState planned_ws_;
+  //dwl::WholeBodyTrajectory planned_wt_;
+  //
+  //
+  //
+  //for (unsigned int i = 0; i < fbs_->getJointDoF(); i++) {
+  //        // Getting the joint id
+  //        unsigned int joint_id = getDWLJointId(JointIdentifiers(i));
+  //        // Converting the actual whole-body states
+  //        planned_ws_.setJointPosition(des_q_(i), joint_id);
+  //        planned_ws_.setJointVelocity(des_qd_(i), joint_id);
+  //        planned_ws_.setJointAcceleration(des_qdd_(i), joint_id);
+  //        //no torques are sent
+  //        planned_ws_.setJointEffort(0., joint_id);
+  //    }
+  //
+  //  planned_ws_.setBaseRPY(solution.base_angular_->GetPoint(t).p());
+  //  planned_ws_.setBaseRPYVelocity_W(base_angular.GetAngularAccelerationInWorld(t));
+  //  planned_ws_.setBaseRPYAcceleration_W(base_angular.GetAngularAccelerationInWorld(t));
+  //
+  //
+  //  planned_ws_.setBasePosition(solution.base_linear_->GetPoint(t).p());
+  //  planned_ws_.setBaseVelocity_W(solution.base_linear_->GetPoint(t).v());
+  //  planned_ws_.setBaseAcceleration_W(solution.base_linear_->GetPoint(t).a());//TODO accel
+  //
+  //  //set the desired foot positions in the planned trajectory
+  //  planned_ws_.setContactPosition_B("01_lf_foot", solution.ee_motion_.at(0)->GetPoint(t).p());
+  //  planned_ws_.setContactPosition_B("02_rf_foot", solution.ee_motion_.at(1)->GetPoint(t).p());
+  //  planned_ws_.setContactPosition_B("03_lh_foot", solution.ee_motion_.at(2)->GetPoint(t).p());
+  //  planned_ws_.setContactPosition_B("04_rh_foot", solution.ee_motion_.at(3)->GetPoint(t).p());
+  //
+  //  //send the desired foot velocities in the planned trajectory
+  //  planned_ws_.setContactVelocity_B("01_lf_foot", solution.ee_motion_.at(ee_towr)->GetPoint(t).v());
+  //  planned_ws_.setContactVelocity_B("02_rf_foot", solution.ee_motion_.at(ee_towr)->GetPoint(t).v());
+  //  planned_ws_.setContactVelocity_B("03_lh_foot", solution.ee_motion_.at(ee_towr)->GetPoint(t).v());
+  //  planned_ws_.setContactVelocity_B("04_rh_foot", solution.ee_motion_.at(ee_towr)->GetPoint(t).v());
+  //
+  //  //send the desired stance legs in the planned trajectory
+  //  planned_ws_.setContactCondition("01_lf_foot",gl.stance_legs[LF]);
+  //  planned_ws_.setContactCondition("02_rf_foot",gl.stance_legs[RF]);
+  //  planned_ws_.setContactCondition("03_lh_foot",gl.stance_legs[LH]);
+  //  planned_ws_.setContactCondition("04_rh_foot",gl.stance_legs[RH]);
+  //
+  //  planned_wt_.resize(1);
+  //  planned_wt.at(0)=planned_ws_;
+  //
+   return planned_w_t;
 }
 
 } /* namespace towr */
