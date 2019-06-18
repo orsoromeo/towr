@@ -9,15 +9,18 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   visualization_msgs
   message_generation
+  xpp_hyq #l'ho aggiunto io
   xpp_msgs
+  dwl_msgs
   xpp_states
   towr
+  dwl
 )
 
 
 ## Generate messages in the 'msg' folder
 add_message_files( FILES TowrCommand.msg )
-generate_messages( DEPENDENCIES std_msgs xpp_msgs )
+generate_messages( DEPENDENCIES std_msgs xpp_msgs dwl_msgs)
 
 
 ###################################
@@ -28,7 +31,7 @@ catkin_package(
    INCLUDE_DIRS include
    LIBRARIES ${PROJECT_NAME}
    CATKIN_DEPENDS xpp_states roscpp
-   DEPENDS towr
+   DEPENDS towr dwl
 )
 
 ###########

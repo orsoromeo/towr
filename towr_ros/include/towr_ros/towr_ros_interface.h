@@ -95,6 +95,8 @@ private:
   ::ros::Subscriber user_command_sub_;
   ::ros::Publisher initial_state_pub_;
   ::ros::Publisher robot_parameters_pub_;
+  ::ros::Publisher trajectory_;
+  ::ros::Publisher dwltrajectory_;
 
   void UserCommandCallback(const TowrCommandMsg& msg);
   XppVec GetTrajectory() const;
@@ -109,6 +111,7 @@ private:
   void SaveTrajectoryInRosbag (rosbag::Bag&,
                                const std::vector<xpp::RobotStateCartesian>& traj,
                                const std::string& topic) const;
+  dwl::WholeBodyTrajectory ToRos();
 };
 
 } /* namespace towr */
