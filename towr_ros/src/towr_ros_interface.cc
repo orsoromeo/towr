@@ -35,9 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <xpp_msgs/topic_names.h>
 #include <xpp_msgs/TerrainInfo.h>
 
-#include <dwl_msgs/WholeBodyStateInterface.h>
-#include </home/misc_ws/src/dwl/dwl/dwl/WholeBodyState.h>
-
 #include <towr/terrain/height_map.h>
 #include <towr/variables/euler_converter.h>
 #include <towr_ros/topic_names.h>
@@ -137,10 +134,11 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
   // to publish entire trajectory (e.g. to send to controller)
   xpp_msgs::RobotStateCartesianTrajectory xpp_msg = xpp::Convert::ToRos(GetTrajectory());
 
-  //dwl_msgs::WholeBodyTrajectory wbtraj = ToRos(GetTrajectory());
+  dwl_msgs::WholeBodyTrajectory wbtraj = ToRos(GetTrajectory());
 
   trajectory_.publish(xpp_msg);
-  //dwltrajectory_.publish(wbtraj);
+  
+  dwltrajectory_.publish(wbtraj);
 }
 
 void
@@ -286,15 +284,32 @@ TowrRosInterface::SaveTrajectoryInRosbag (rosbag::Bag& bag,
   }
 }
 
-dwl::WholeBodyTrajectory TowrRosInterface::ToRos()
+dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos(const std::vector<xpp::RobotStateCartesian>& xpp)
 {
-  //EulerConverter base_angular(solution.base_angular_);
-  //dwl::WholeBodyState planned_ws_;
-  //dwl::WholeBodyTrajectory planned_wt_;
-  //
-  //
-  //
+  EulerConverter base_angular(solution.base_angular_);
+  dwl_msgs::BaseState base_state;
+  dwl_msgs::WholeBodyState planned_wbs_msg;
+  dwl_msgs::WholeBodyTrajectory planned_wt;
+  unsigned int contact_counter = 1;
+  dwl_msgs::ContactState contact_state_lf, contact_state_rf, contact_state_lh, contact_state_rh;
+  std::cout<<"i am here"<<std::endl;
+  contact_state_lf.position.x = 0.1;
+  contact_state_lf.position.y = 0.2;
+  contact_state_lf.position.z = 0.3;
+  contact_state_lf.name = "01_lf_foot";
+  std::cout<<"i am here0"<<std::endl;
+  planned_wbs_msg.contacts.push_back(contact_state_lf);
+  planned_wbs_msg.contacts.push_back(contact_state_rf);
+  planned_wbs_msg.contacts.push_back(contact_state_lh);
+  planned_wbs_msg.contacts.push_back(contact_state_rh);
+  std::cout<<"i am here1"<<std::endl;
+  base_state.id = base_state.LX;
+  base_state.position = 0.05;
+  base_state.velocity = 0.01;
+  base_state.acceleration = 0.02;
+  planned_wbs_msg.base.push_back(base_state);
   //for (unsigned int i = 0; i < fbs_->getJointDoF(); i++) {
+  //for (unsigned int i = 0; i < 12; i++) {
   //        // Getting the joint id
   //        unsigned int joint_id = getDWLJointId(JointIdentifiers(i));
   //        // Converting the actual whole-body states
@@ -332,10 +347,10 @@ dwl::WholeBodyTrajectory TowrRosInterface::ToRos()
   //  planned_ws_.setContactCondition("03_lh_foot",gl.stance_legs[LH]);
   //  planned_ws_.setContactCondition("04_rh_foot",gl.stance_legs[RH]);
   //
-  //  planned_wt_.resize(1);
-  //  planned_wt.at(0)=planned_ws_;
-  //
-   return planned_w_t;
+  //planned_wt.resize(1);
+  planned_wt.trajectory.push_back(planned_wbs_msg);
+  std::cout<<"i am here2"<<std::endl;
+  return planned_wt;
 }
 
 } /* namespace towr */

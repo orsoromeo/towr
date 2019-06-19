@@ -35,6 +35,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ros/ros.h>
 #include <rosbag/bag.h>
 
+#include <dwl_msgs/WholeBodyStateInterface.h>
+#include <dwl/WholeBodyState.h>
+
 #include <xpp_states/robot_state_cartesian.h>
 #include <xpp_msgs/RobotStateCartesian.h>
 #include <xpp_msgs/RobotParameters.h>
@@ -111,7 +114,8 @@ private:
   void SaveTrajectoryInRosbag (rosbag::Bag&,
                                const std::vector<xpp::RobotStateCartesian>& traj,
                                const std::string& topic) const;
-  dwl::WholeBodyTrajectory ToRos();
+
+  dwl_msgs::WholeBodyTrajectory ToRos(const std::vector<xpp::RobotStateCartesian>& xpp);
 };
 
 } /* namespace towr */
