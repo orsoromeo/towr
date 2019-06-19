@@ -75,7 +75,7 @@ NlpFormulation::GetVariableSets (SplineHolder& spline_holder)
   vars.insert(vars.end(), ee_motion.begin(), ee_motion.end());
 
   auto ee_force = MakeForceVariables();
-  //vars.insert(vars.end(), ee_force.begin(), ee_force.end());
+  vars.insert(vars.end(), ee_force.begin(), ee_force.end());
 
   auto contact_schedule = MakeContactScheduleVariables();
 
@@ -96,7 +96,7 @@ NlpFormulation::GetVariableSets (SplineHolder& spline_holder)
                                base_motion.at(1), // angular
                                params_.GetBasePolyDurations(),
                                ee_motion,
-                               //ee_force,
+                               ee_force,
                                contact_schedule,
                                params_.IsOptimizeTimings());
   return vars;
@@ -241,12 +241,12 @@ NlpFormulation::GetConstraint (Parameters::ConstraintName name,
                            const SplineHolder& s, ifopt::Problem nlp) const
 {
   switch (name) {
-    //case Parameters::Dynamic:                     return MakeDynamicConstraint(s);
+    case Parameters::Dynamic:                     return MakeDynamicConstraint(s);
     case Parameters::EndeffectorRom:              return MakeRangeOfMotionBoxConstraint(s);
     case Parameters::BaseRom:                     return MakeBaseRangeOfMotionConstraint(s);
     case Parameters::TotalTime:                   return MakeTotalTimeConstraint();
     case Parameters::Terrain:                     return MakeTerrainConstraint();
-    //case Parameters::Force:                       return MakeForceConstraint();
+    case Parameters::Force:                       return MakeForceConstraint();
     case Parameters::Swing:                       return MakeSwingConstraint();
     case Parameters::BaseAcc:                     return MakeBaseAccConstraint(s);
     case Parameters::BaseAccConstraintValueLin:   return MakeBaseAccConstraintValueLin(s,nlp);
