@@ -33,7 +33,10 @@ Geometry::Geometry (DynamicModel::Ptr model,
   angle_.resize(numberofleg);
   normal_.resize(numberofleg,3);
   Edges_.resize(4*numberofleg,6);
-  Edges_.setZero();
+  SetZeroGlobalVariables();
+
+
+
 
 }
 
@@ -101,7 +104,7 @@ Eigen::Vector3d Geometry::ComputeNextEdge (Eigen::Matrix3d M, Eigen::Vector3d n)
 
 Eigen::MatrixXd Geometry::ComputeCone (double t) const
 {
-  //std::<<"b"<<std::endl;
+
   SetZeroGlobalVariables();
   normal_=ReturnNormalTerrain(t);
   for (int ee=0; ee<numberoflegs_; ee++)
@@ -129,10 +132,10 @@ Eigen::MatrixXd Geometry::ComputeCone (double t) const
 
 
     return Edges_.transpose();
-
-
-
-
+  //
+  //
+  //
+  //
 }
 
 Eigen::MatrixXd
@@ -196,13 +199,13 @@ double Geometry::ComputeRotationAngle (Eigen::Vector3d normal) const
 }
 void Geometry::SetZeroGlobalVariables() const
 {
+
  LinearEdges_.setZero();
  AngularEdges_.setZero();
  EhatLin_.setZero();
  Edges_.setZero();
  normal_.setZero();
  angle_.setZero();
- normal_.setZero();
 }
 bool Geometry::IsInTouch (double t,int ee) const
 {

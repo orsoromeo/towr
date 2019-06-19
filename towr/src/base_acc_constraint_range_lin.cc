@@ -56,13 +56,15 @@ BaseAccConstraintRangeLin::BaseAccConstraintRangeLin (const DynamicModel::Ptr& m
                                                       const SplineHolder& spline_holder,
                                                       int numberofleg,
                                                       const std::vector<std::vector<double>>& phase_durations,
-                                                      Geometry & geom,
-                                                      Derivative & der)
+                                                      Geometry geom,
+                                                      Derivative der)
     :TimeDiscretizationConstraint(T, dt, "baseAccConstraintValueLin-"), geom_(geom),
                                                                         der_(der)
 
 {
-
+ std::cout<<"constructor lin "<<geom_.LinearEdges_<<std::endl;
+ std::cout<<"constructor normal "<<geom_.normal_<<std::endl;
+ std::cout<<"constructor angle "<<geom_.angle_<<std::endl;
  phase_durations_=phase_durations;
  numberofleg_=numberofleg;
  model_=model;
@@ -79,6 +81,8 @@ BaseAccConstraintRangeLin::BaseAccConstraintRangeLin (const DynamicModel::Ptr& m
  base_angular_ = EulerConverter(spline_holder.base_angular_);
  I_b=model_->ReturnInertia();
 
+
+
 }
 
 void
@@ -86,13 +90,14 @@ BaseAccConstraintRangeLin::UpdateConstraintAtInstance (double t, int k,
                                                   VectorXd& g) const
 {
 
-  if (k<NumberNodes_)
-  {
-     // std::cout<<"update constraint"<<std::endl;
-    auto com=base_linear_->GetPoint(t);
-    g.middleRows(GetRow(k, 0), 6) =FillConstraint(com,t);
 
-  }
+    if (k<NumberNodes_)
+     {
+
+      auto com=base_linear_->GetPoint(t);
+      g.middleRows(GetRow(k, 0), 6) =FillConstraint(com,t);
+     }
+
 }
 
 void
@@ -105,7 +110,7 @@ BaseAccConstraintRangeLin::UpdateBoundsAtInstance (double t, int k, VecBound& bo
 
 
   }
-} //
+}
 
 void
 BaseAccConstraintRangeLin::UpdateJacobianAtInstance (double t, int k,
@@ -113,22 +118,22 @@ BaseAccConstraintRangeLin::UpdateJacobianAtInstance (double t, int k,
                                                 Jacobian& jac) const
 {
 
-   if (k<NumberNodes_)
+  if (k<NumberNodes_)
    {
+     //std::cout<<t<<" "<<k<<"  "<<NumberNodes_<<std::endl;
+     if (var_set==id::base_lin_nodes)
+      {
+       jac.middleRows(6*k,3)=FillJacobianLinWrenchWrtLin(t);
+       jac.middleRows(6*k+3,3)=FillJacobianAngWrenchWrtLin(t,k);
+      }
 
-    if (var_set==id::base_lin_nodes)
-     {
+     if (var_set ==id::base_ang_nodes)
+      {
+       jac.middleRows(6*k+3,3)=FillJacobianAngWrenchWrtAng(t);
+      }
 
-
-      jac.middleRows(6*k,3)=FillJacobianLinWrenchWrtLin(t);
-      jac.middleRows(6*k+3,3)=FillJacobianAngWrenchWrtLin(t,k);
-     }
-    if (var_set ==id::base_ang_nodes)
-     {
-      jac.middleRows(6*k+3,3)=FillJacobianAngWrenchWrtAng(t);
-     }
-    for (int ee=0; ee<model_->GetEECount(); ee++)
-    if (var_set == id::EEMotionNodes(ee))
+   for (int ee=0; ee<model_->GetEECount(); ee++)
+     if (var_set == id::EEMotionNodes(ee))
      {
       if (geom_.IsInTouch(t,ee))
       {
@@ -144,7 +149,7 @@ BaseAccConstraintRangeLin::UpdateJacobianAtInstance (double t, int k,
    if (var_set == id::lambda_)
     {
      geom_.ComputeCone(t);
-     //jac.middleRows(6*k,6)=FillJacobianEdgesWrtLambda(t,k);
+     jac.middleRows(6*k,6)=FillJacobianEdgesWrtLambda(t,k);
 
 
     }
@@ -167,8 +172,10 @@ BaseAccConstraintRangeLin::FillConstraint (State com, double t) const
   g=ComputeWrench(com,t);
   auto lambda=lambda_->GetPoint(t).p();
   Eigen::MatrixXd edges=geom_.ComputeCone(t);
+  geom_.LinearEdges_.setOnes();
   auto lambdaedge=edges*lambda;
   return g-lambdaedge;
+  //return g;
 }
 
 
@@ -327,7 +334,6 @@ BaseAccConstraintRangeLin::FillJacobianEdgesWrtLambda (double t,int k) const
   edge.resize(6,4*geom_.numberoflegs_);
   edge=geom_.ComputeCone(t);
 
-   std::cout<<" t "<<t<<std::endl;
 
   Eigen::MatrixXd jac2(6,jac1.cols());
   jac2.setZero();
