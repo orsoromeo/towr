@@ -88,10 +88,10 @@ TEST(TOWR, optimizeTrajectory){
           double tot_time = formulation.params_.GetTotalTime();
           formulation.params_.OptimizePhaseDurations();
           ////constraints.push_back(std::make_shared<TotalDurationConstraint>(tot_time, ee_count));
-          constraints.push_back(std::make_shared<TerrainConstraint>(formulation.terrain_, ee_motion_name));
+          //constraints.push_back(std::make_shared<TerrainConstraint>(formulation.terrain_, ee_motion_name));
 
           ////swing_constraint
-          constraints.push_back(std::make_shared<SwingConstraint>(id::EEMotionNodes(formulation.params_.GetEECount()-1)));
+          //constraints.push_back(std::make_shared<SwingConstraint>(id::EEMotionNodes(formulation.params_.GetEECount()-1)));
 
           //force_constraint
 
@@ -101,12 +101,12 @@ TEST(TOWR, optimizeTrajectory){
           //
           //spline_acc_constraint
 
-          constraints.push_back(std::make_shared<SplineAccConstraint>
-                                (solution.base_linear_, id::base_lin_nodes)) ;
-
-          constraints.push_back(std::make_shared<SplineAccConstraint>
-                                (solution.base_angular_, id::base_ang_nodes)) ;
-
+          //constraints.push_back(std::make_shared<SplineAccConstraint>
+          //                      (solution.base_linear_, id::base_lin_nodes)) ;
+          //
+          //constraints.push_back(std::make_shared<SplineAccConstraint>
+          //                      (solution.base_angular_, id::base_ang_nodes)) ;
+          //
           //constraints.push_back(std::make_shared<DynamicConstraint>(formulation.model_.dynamic_model_,
           //                                                        formulation.params_.GetTotalTime(),
           //                                                        formulation.params_.dt_constraint_dynamic_,
@@ -123,7 +123,7 @@ TEST(TOWR, optimizeTrajectory){
 
           constraints.push_back(std::make_shared<BaseAccConstraintRangeLin>(formulation.model_.dynamic_model_,
                                                                             formulation.params_.GetTotalTime(),
-                                                                            formulation.params_.dt_constraint_base_acc_,
+                                                                            formulation.params_.dt_constraint_dynamic_,
                                                                             solution.base_linear_, id::base_lin_nodes,
                                                                             formulation.terrain_,
                                                                             solution,
@@ -211,4 +211,5 @@ TEST(TOWR, optimizeTrajectory){
 
             t += 0.1;
             }
+            //solver->Solve(nlp);
 }

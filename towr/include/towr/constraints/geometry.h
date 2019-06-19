@@ -30,9 +30,9 @@ public:
   mutable Eigen::MatrixXd  AngularEdges_;
   mutable Eigen::MatrixXd  EhatLin_;
   mutable Eigen::MatrixXd  EhatAng_;
-  mutable Eigen::VectorXd angle_;
-  mutable Eigen::MatrixXd normal_;
-  mutable Eigen::MatrixXd Edges_;
+  mutable Eigen::VectorXd  angle_;
+  mutable Eigen::MatrixXd  normal_;
+  mutable Eigen::MatrixXd  Edges_;
   mutable std::vector<NodeSpline::Ptr> ee_motion_in_touch_;
   Eigen::MatrixXd ReturnNormalTerrain (double t) const ;
   double ComputeRotationAngle (Eigen::Vector3d normal) const;

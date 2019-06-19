@@ -69,8 +69,8 @@ public:
                              const SplineHolder& spline_holder,
                              int numberoflegs,
                              const std::vector<std::vector<double>> &phase_durations,
-                             Geometry & geom,
-                             Derivative & der);
+                             Geometry  geom,
+                             Derivative  der);
   virtual ~BaseAccConstraintRangeLin () = default;
 
   void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
@@ -105,8 +105,8 @@ private:
   Eigen::MatrixXd  LinearEdges_;
   Eigen::MatrixXd  AngularEdges_;
   Eigen::Vector3d base_;
-  Geometry & geom_;
-  Derivative & der_;
+  Geometry geom_;
+  Derivative der_;
   int GetRow (int node, int dim) const;
   int GetNumberOfFeetInTouch (double t);
   NodeSpline::Jacobian FillJacobian(NodeSpline::Ptr spline_, double t) const;

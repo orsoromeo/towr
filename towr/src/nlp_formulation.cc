@@ -214,7 +214,6 @@ NlpFormulation::MakeLambdaVariables () const
   std::vector<NodesVariables::Ptr> vars;
 
   int n_nodes = params_.GetBasePolyDurations().size() + 1;
-
   auto spline_lambda = std::make_shared<NodesVariableslambda>(n_nodes, params_.GetEECount()*4, id::lambda_);
   Eigen::VectorXd a;
   a.resize(params_.GetEECount()*4);
@@ -373,7 +372,7 @@ NlpFormulation::MakeBaseAccConstraintValueLin (const SplineHolder& s, ifopt::Pro
   Derivative der(terrain_, s, params_.GetEECount(), params_.ee_phase_durations_);
 
   constraints.push_back(std::make_shared<BaseAccConstraintRangeLin>(model_.dynamic_model_, params_.GetTotalTime(),
-                                                                    params_.dt_constraint_base_motion_,
+                                                                    params_.dt_constraint_dynamic_,
                                                                     s.base_linear_, id::base_lin_nodes,
                                                                     terrain_,
                                                                     s,
