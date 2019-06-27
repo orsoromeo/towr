@@ -134,7 +134,7 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
   // to publish entire trajectory (e.g. to send to controller)
   xpp_msgs::RobotStateCartesianTrajectory xpp_msg = xpp::Convert::ToRos(GetTrajectory());
 
-  dwl_msgs::WholeBodyTrajectory wbtraj = ToRos(GetTrajectory());
+  dwl_msgs::WholeBodyTrajectory wbtraj = ToRos();
 
   trajectory_.publish(xpp_msg);
   
@@ -284,87 +284,177 @@ TowrRosInterface::SaveTrajectoryInRosbag (rosbag::Bag& bag,
   }
 }
 
-dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos(const std::vector<xpp::RobotStateCartesian>& xpp)
+dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
 {
-  EulerConverter base_angular(solution.base_angular_);
-  dwl_msgs::BaseState base_state_0, base_state_1, base_state_2, base_state_3, base_state_4, base_state_5;
-  dwl_msgs::WholeBodyState planned_wbs_msg;
   dwl_msgs::WholeBodyTrajectory planned_wt;
-  unsigned int contact_counter = 1;
-  dwl_msgs::ContactState contact_state_lf, contact_state_rf, contact_state_lh, contact_state_rh;
-  std::cout<<"i am here"<<std::endl;
-  contact_state_lf.position.x = solution.ee_motion_.at(0)->GetPoint(t).p().x();
-  contact_state_lf.position.y = solution.ee_motion_.at(0)->GetPoint(t).p().y();
-  contact_state_lf.position.z = solution.ee_motion_.at(0)->GetPoint(t).p().z();
-  contact_state_lf.name = "01_lf_foot";
-  contact_state_rf.position.x = solution.ee_motion_.at(1)->GetPoint(t).p().x();
-  contact_state_rf.position.y = solution.ee_motion_.at(1)->GetPoint(t).p().y();
-  contact_state_rf.position.z = solution.ee_motion_.at(1)->GetPoint(t).p().z();
-  contact_state_rf.name = "02_rf_foot";
-  contact_state_lh.position.x = solution.ee_motion_.at(2)->GetPoint(t).p().x();
-  contact_state_lh.position.y = solution.ee_motion_.at(2)->GetPoint(t).p().y();
-  contact_state_lh.position.z = solution.ee_motion_.at(2)->GetPoint(t).p().z();
-  contact_state_lh.name = "03_lh_foot";
-  contact_state_rh.position.x = solution.ee_motion_.at(3)->GetPoint(t).p().x();
-  contact_state_rh.position.y = solution.ee_motion_.at(3)->GetPoint(t).p().y();
-  contact_state_rh.position.z = solution.ee_motion_.at(3)->GetPoint(t).p().z();
-  contact_state_rh.name = "04_rh_foot";
-  std::cout<<"i am here0"<<std::endl;
-  planned_wbs_msg.contacts.push_back(contact_state_lf);
-  planned_wbs_msg.contacts.push_back(contact_state_rf);
-  planned_wbs_msg.contacts.push_back(contact_state_lh);
-  planned_wbs_msg.contacts.push_back(contact_state_rh);
-  std::cout<<"i am here1"<<std::endl;
-  base_state.name="floating_base";
-  base_state.id = base_state.AX;
-  base_state.position = 0.05;
-  base_state.velocity = 0.01;
-  base_state.acceleration = 0.02;
-  planned_wbs_msg.base.push_back(base_state);
-  //for (unsigned int i = 0; i < fbs_->getJointDoF(); i++) {
-  //for (unsigned int i = 0; i < 12; i++) {
-  //        // Getting the joint id
-  //        unsigned int joint_id = getDWLJointId(JointIdentifiers(i));
-  //        // Converting the actual whole-body states
-  //        planned_ws_.setJointPosition(des_q_(i), joint_id);
-  //        planned_ws_.setJointVelocity(des_qd_(i), joint_id);
-  //        planned_ws_.setJointAcceleration(des_qdd_(i), joint_id);
-  //        //no torques are sent
-  //        planned_ws_.setJointEffort(0., joint_id);
-  //    }
-  //
-  //  planned_ws_.setBaseRPY(solution.base_angular_->GetPoint(t).p());
-  //  planned_ws_.setBaseRPYVelocity_W(base_angular.GetAngularAccelerationInWorld(t));
-  //  planned_ws_.setBaseRPYAcceleration_W(base_angular.GetAngularAccelerationInWorld(t));
-  //
-  //
-  //  planned_ws_.setBasePosition(solution.base_linear_->GetPoint(t).p());
-  //  planned_ws_.setBaseVelocity_W(solution.base_linear_->GetPoint(t).v());
-  //  planned_ws_.setBaseAcceleration_W(solution.base_linear_->GetPoint(t).a());//TODO accel
-  //
-  //  //set the desired foot positions in the planned trajectory
-  //  planned_ws_.setContactPosition_B("01_lf_foot", solution.ee_motion_.at(0)->GetPoint(t).p());
-  //  planned_ws_.setContactPosition_B("02_rf_foot", solution.ee_motion_.at(1)->GetPoint(t).p());
-  //  planned_ws_.setContactPosition_B("03_lh_foot", solution.ee_motion_.at(2)->GetPoint(t).p());
-  //  planned_ws_.setContactPosition_B("04_rh_foot", solution.ee_motion_.at(3)->GetPoint(t).p());
-  //
-  //  //send the desired foot velocities in the planned trajectory
-  //  planned_ws_.setContactVelocity_B("01_lf_foot", solution.ee_motion_.at(ee_towr)->GetPoint(t).v());
-  //  planned_ws_.setContactVelocity_B("02_rf_foot", solution.ee_motion_.at(ee_towr)->GetPoint(t).v());
-  //  planned_ws_.setContactVelocity_B("03_lh_foot", solution.ee_motion_.at(ee_towr)->GetPoint(t).v());
-  //  planned_ws_.setContactVelocity_B("04_rh_foot", solution.ee_motion_.at(ee_towr)->GetPoint(t).v());
-  //
-  //  //send the desired stance legs in the planned trajectory
-  //  planned_ws_.setContactCondition("01_lf_foot",gl.stance_legs[LF]);
-  //  planned_ws_.setContactCondition("02_rf_foot",gl.stance_legs[RF]);
-  //  planned_ws_.setContactCondition("03_lh_foot",gl.stance_legs[LH]);
-  //  planned_ws_.setContactCondition("04_rh_foot",gl.stance_legs[RH]);
-  //
-  //planned_wt.resize(1);
-  planned_wt.trajectory.push_back(planned_wbs_msg);
-  std::cout<<"i am here2"<<std::endl;
-  return planned_wt;
-}
+  //planned_wt.resize(solution.base_linear_->GetTotalTime()/0.04);
+  auto base_angular=EulerConverter(solution.base_angular_);
+  for(int i=0; i<solution.base_linear_->GetTotalTime()/0.04; i++)
+  {
+
+    double t=i*0.04;
+
+    dwl_msgs::WholeBodyState planned_wbs_msg;
+    for(int ee=0; ee<solution.ee_motion_.size(); ee++)
+    {
+      dwl_msgs::ContactState contact;
+      contact.position.x = solution.ee_motion_.at(ee)->GetPoint(t).p().x();
+      contact.position.y = solution.ee_motion_.at(ee)->GetPoint(t).p().y();
+      contact.position.z = solution.ee_motion_.at(ee)->GetPoint(t).p().z();
+      switch(ee)
+      {
+       case 0: contact.name = "01_lf_foot"; break;
+       case 1: contact.name = "02_rf_foot"; break;
+       case 2: contact.name = "03_lh_foot"; break;
+       case 3: contact.name = "04_rh_foot"; break;
+      }
+      if(solution.phase_durations_.at(ee)->IsContactPhase(t))
+      {
+       contact.wrench.force.x=100;
+       contact.wrench.force.y=100;
+       contact.wrench.force.z=100;
+      }
+      else
+      {
+        contact.wrench.force.x=0;
+        contact.wrench.force.y=0;
+        contact.wrench.force.z=0;
+      }
+    planned_wbs_msg.contacts.push_back(contact);
+    }
+
+    //unsigned int contact_counter = 1;
+
+    //std::cout<<"i am here1"<<std::endl;
+    auto pos=solution.base_angular_->GetPoint(t).p();
+    auto vel=base_angular.GetAngularVelocityInWorld(t);
+    auto accel=base_angular.GetAngularAccelerationInWorld(t);
+    for(int base=0; base<3; base++)
+    {
+      dwl_msgs::BaseState base_state;
+      base_state.name="floating_base";
+      base_state.position =pos(base);
+      base_state.velocity =vel(base);
+      base_state.acceleration=accel(base);
+      switch(base)
+      {
+       case 0: base_state.id = base_state.AX; break;
+       case 1: base_state.id = base_state.AY; break;
+       case 2: base_state.id = base_state.AZ; break;
+      }
+      planned_wbs_msg.base.push_back(base_state);
+    }
+    auto pos_lin=solution.base_linear_->GetPoint(t).p();
+    auto vel_lin=solution.base_linear_->GetPoint(t).v();;
+    auto acc_lin=solution.base_linear_->GetPoint(t).a();
+    for(int base=0; base<3; base++)
+    {
+      dwl_msgs::BaseState base_state;
+      base_state.name="floating_base";
+      base_state.position =pos_lin(base);
+      base_state.velocity =vel_lin(base);
+      base_state.acceleration=acc_lin(base);
+      switch(base)
+      {
+       case 0: base_state.id = base_state.LX; break;
+       case 1: base_state.id = base_state.LY; break;
+       case 2: base_state.id = base_state.LZ; break;
+
+      }
+      planned_wbs_msg.base.push_back(base_state);
+    }
+    planned_wt.trajectory.push_back(planned_wbs_msg);}
+    std::cout<<"i am here2"<<std::endl;
+    return planned_wt;
+    }
+    //dwl_msgs::BaseState base_state_0, base_state_1, base_state_2, base_state_3, base_state_4, base_state_5;
+    //
+    //base_state_0.name="floating_base";
+    //base_state_0.id = base_state_0.AX;
+    //base_state_0.position = solution.base_angular_->GetPoint(t).p().x();
+    //base_state_0.velocity = base_angular.GetAngularVelocityInWorld(t).x();
+    //base_state_0.acceleration = base_angular.GetAngularAccelerationInWorld(t).x();
+    //
+    //base_state_1.name="floating_base";
+    //base_state_1.id = base_state_1.AY;
+    //base_state_1.position = solution.base_angular_->GetPoint(t).p().y();
+    //base_state_1.velocity = base_angular.GetAngularVelocityInWorld(t).y();
+    //base_state_1.acceleration = base_angular.GetAngularAccelerationInWorld(t).y();
+    //
+    //base_state_2.name="floating_base";
+    //base_state_2.id = base_state_2.AZ;
+    //base_state_2.position = solution.base_angular_->GetPoint(t).p().z();
+    //base_state_2.velocity = base_angular.GetAngularVelocityInWorld(t).z();
+    //base_state_2.acceleration = base_angular.GetAngularAccelerationInWorld(t).z();
+    //
+    //base_state_3.name="floating_base";
+    //base_state_3.id = base_state_3.LX;
+    //base_state_3.position = solution.base_linear_->GetPoint(t).p().x();
+    //base_state_3.velocity = solution.base_linear_->GetPoint(t).v().x();
+    //base_state_3.acceleration = solution.base_linear_->GetPoint(t).a().x();
+    //
+    //base_state_4.name="floating_base";
+    //base_state_4.id = base_state_4.LY;
+    //base_state_4.position = solution.base_linear_->GetPoint(t).p().y();
+    //base_state_4.velocity = solution.base_linear_->GetPoint(t).v().y();
+    //base_state_4.acceleration = solution.base_linear_->GetPoint(t).a().y();
+    //
+    //base_state_5.name="floating_base";
+    //base_state_5.id = base_state_5.LZ;
+    //base_state_5.position = solution.base_linear_->GetPoint(t).p().z();
+    //base_state_5.velocity = solution.base_linear_->GetPoint(t).v().z();
+    //base_state_5.acceleration = solution.base_linear_->GetPoint(t).a().z();
+    //
+    //planned_wbs_msg.base.push_back(base_state_0);
+    //planned_wbs_msg.base.push_back(base_state_1);
+    //planned_wbs_msg.base.push_back(base_state_2);
+    //planned_wbs_msg.base.push_back(base_state_3);
+    //planned_wbs_msg.base.push_back(base_state_4);
+    //planned_wbs_msg.base.push_back(base_state_5);
+    //for (unsigned int i = 0; i < fbs_->getJointDoF(); i++) {
+    //for (unsigned int i = 0; i < 12; i++) {
+    //        // Getting the joint id
+    //        unsigned int joint_id = getDWLJointId(JointIdentifiers(i));
+    //        // Converting the actual whole-body states
+    //        planned_ws_.setJointPosition(des_q_(i), joint_id);
+    //        planned_ws_.setJointVelocity(des_qd_(i), joint_id);
+    //        planned_ws_.setJointAcceleration(des_qdd_(i), joint_id);
+    //        //no torques are sent
+    //        planned_ws_.setJointEffort(0., joint_id);
+    //    }
+    //
+    //  planned_ws_.setBaseRPY(solution.base_angular_->GetPoint(t).p());
+    //  planned_ws_.setBaseRPYVelocity_W(base_angular.GetAngularAccelerationInWorld(t));
+    //  planned_ws_.setBaseRPYAcceleration_W(base_angular.GetAngularAccelerationInWorld(t));
+    //
+    //
+    //  planned_ws_.setBasePosition(solution.base_linear_->GetPoint(t).p());
+    //  planned_ws_.setBaseVelocity_W(solution.base_linear_->GetPoint(t).v());
+    //  planned_ws_.setBaseAcceleration_W(solution.base_linear_->GetPoint(t).a());//TODO accel
+    //
+    //  //set the desired foot positions in the planned trajectory
+    //  planned_ws_.setContactPosition_B("01_lf_foot", solution.ee_motion_.at(0)->GetPoint(t).p());
+    //  planned_ws_.setContactPosition_B("02_rf_foot", solution.ee_motion_.at(1)->GetPoint(t).p());
+    //  planned_ws_.setContactPosition_B("03_lh_foot", solution.ee_motion_.at(2)->GetPoint(t).p());
+    //  planned_ws_.setContactPosition_B("04_rh_foot", solution.ee_motion_.at(3)->GetPoint(t).p());
+    //
+    //  //send the desired foot velocities in the planned trajectory
+    //  planned_ws_.setContactVelocity_B("01_lf_foot", solution.ee_motion_.at(ee_towr)->GetPoint(t).v());
+    //  planned_ws_.setContactVelocity_B("02_rf_foot", solution.ee_motion_.at(ee_towr)->GetPoint(t).v());
+    //  planned_ws_.setContactVelocity_B("03_lh_foot", solution.ee_motion_.at(ee_towr)->GetPoint(t).v());
+    //  planned_ws_.setContactVelocity_B("04_rh_foot", solution.ee_motion_.at(ee_towr)->GetPoint(t).v());
+    //
+    //  //send the desired stance legs in the planned trajectory
+    //  planned_ws_.setContactCondition("01_lf_foot",gl.stance_legs[LF]);
+    //  planned_ws_.setContactCondition("02_rf_foot",gl.stance_legs[RF]);
+    //  planned_ws_.setContactCondition("03_lh_foot",gl.stance_legs[LH]);
+    //  planned_ws_.setContactCondition("04_rh_foot",gl.stance_legs[RH]);
+    //
+    //planned_wt.resize(1);
+    //planned_wt.trajectory.push_back(planned_wbs_msg);}
+  //std::cout<<"i am here2"<<std::endl;
+  //return planned_wt;
+//}
 
 } /* namespace towr */
 

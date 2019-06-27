@@ -115,7 +115,7 @@ private:
                                const std::vector<xpp::RobotStateCartesian>& traj,
                                const std::string& topic) const;
 
-  dwl_msgs::WholeBodyTrajectory ToRos(const std::vector<xpp::RobotStateCartesian>& xpp);
+  dwl_msgs::WholeBodyTrajectory ToRos();
 };
 
 } /* namespace towr */
