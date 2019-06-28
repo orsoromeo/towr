@@ -287,20 +287,32 @@ TowrRosInterface::SaveTrajectoryInRosbag (rosbag::Bag& bag,
 dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
 {
   dwl_msgs::WholeBodyTrajectory planned_wt;
+
   //planned_wt.resize(solution.base_linear_->GetTotalTime()/0.04);
   auto base_angular=EulerConverter(solution.base_angular_);
-  for(int i=0; i<solution.base_linear_->GetTotalTime()/0.04; i++)
+
+  for(int i=0; i<solution.base_linear_->GetTotalTime()/0.004; i++)
   {
 
-    double t=i*0.04;
-
+    double t=i*0.004;
+    Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(t);
     dwl_msgs::WholeBodyState planned_wbs_msg;
     for(int ee=0; ee<solution.ee_motion_.size(); ee++)
     {
       dwl_msgs::ContactState contact;
-      contact.position.x = solution.ee_motion_.at(ee)->GetPoint(t).p().x();
-      contact.position.y = solution.ee_motion_.at(ee)->GetPoint(t).p().y();
-      contact.position.z = solution.ee_motion_.at(ee)->GetPoint(t).p().z();
+      Eigen::Vector3d footPosDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).p() - solution.base_linear_->GetPoint(t).p());
+      contact.position.x = footPosDesCoM(0);
+      contact.position.y = footPosDesCoM(1);
+      contact.position.z = footPosDesCoM(2);
+
+      Eigen::Vector3d footVelDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).v() - solution.base_linear_->GetPoint(t).v());
+      contact.velocity.x = footVelDesCoM(0);
+      contact.velocity.y = footVelDesCoM(1);
+      contact.velocity.z = footVelDesCoM(2);
+
+      contact.acceleration.x = solution.ee_motion_.at(ee)->GetPoint(t).a().x();
+      contact.acceleration.y = solution.ee_motion_.at(ee)->GetPoint(t).a().y();
+      contact.acceleration.z = solution.ee_motion_.at(ee)->GetPoint(t).a().z();
       switch(ee)
       {
        case 0: contact.name = "01_lf_foot"; break;

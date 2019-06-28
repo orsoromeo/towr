@@ -148,8 +148,8 @@ BaseAccConstraintRangeLin::UpdateJacobianAtInstance (double t, int k,
 
    if (var_set == id::lambda_)
     {
-     //geom_.ComputeCone(t);
-     //jac.middleRows(6*k,6)=FillJacobianEdgesWrtLambda(t,k);
+     geom_.ComputeCone(t);
+     jac.middleRows(6*k,6)=FillJacobianEdgesWrtLambda(t,k);
 
 
     }
