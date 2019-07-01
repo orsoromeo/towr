@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <ros/ros.h>
 #include <rosbag/bag.h>
+#include <std_srvs/Empty.h>
 
 #include <dwl_msgs/WholeBodyStateInterface.h>
 #include <dwl/WholeBodyState.h>
@@ -96,12 +97,19 @@ private:
   double visualization_dt_; ///< duration between two rviz visualization states.
 
   ::ros::Subscriber user_command_sub_;
+  ::ros::Subscriber controller_sub_;
   ::ros::Publisher initial_state_pub_;
   ::ros::Publisher robot_parameters_pub_;
   ::ros::Publisher trajectory_;
   ::ros::Publisher dwltrajectory_;
 
+  ros::ServiceServer recompute_plan_srv_;
+
   void UserCommandCallback(const TowrCommandMsg& msg);
+  void ReplanningCallback(const dwl_msgs::WholeBodyTrajectory & msg);
+  bool RecomputePlan(std_srvs::Empty::Request& req,
+             std_srvs::Empty::Response& res);
+
   XppVec GetTrajectory() const;
   virtual BaseState GetGoalState(const TowrCommandMsg& msg) const;
   void PublishInitialState();
