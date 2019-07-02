@@ -84,8 +84,58 @@ TowrRosInterface::GetGoalState(const TowrCommandMsg& msg) const
   return goal;
 }
 
-void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyTrajectory & msg){
-  
+BaseState TowrRosInterface::GetInitialState()
+{
+  return initialBaseState;
+}
+
+
+void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & msg){
+  initialBaseState.ang.at(kPos)(0) = msg.actual.base[0].position;
+  initialBaseState.ang.at(kPos)(1) = msg.actual.base[1].position;
+  initialBaseState.ang.at(kPos)(2) = msg.actual.base[2].position;
+
+  initialBaseState.ang.at(kVel)(0) = msg.actual.base[0].velocity;
+  initialBaseState.ang.at(kVel)(1) = msg.actual.base[1].velocity;
+  initialBaseState.ang.at(kVel)(2) = msg.actual.base[2].velocity;
+
+  initialBaseState.lin.at(kPos)(0) = msg.actual.base[3].position;
+  initialBaseState.lin.at(kPos)(1) = msg.actual.base[4].position;
+  initialBaseState.lin.at(kPos)(2) = msg.actual.base[5].position;
+
+  initialBaseState.lin.at(kVel)(0) = msg.actual.base[3].velocity;
+  initialBaseState.lin.at(kVel)(1) = msg.actual.base[4].velocity;
+  initialBaseState.lin.at(kVel)(2) = msg.actual.base[5].velocity;
+  //std::cout<<"initial base pos CALLBACK"<<initialBaseState.lin.at(kPos).transpose()<<std::endl;
+  //initialBaseState.ang.at(kPos) = msg.actual.base;
+  //initialBaseState.ang.at(kVel) = msg.actual.base;
+
+
+  initial_foot_lf_B(0) = msg.actual.contacts[0].position.x;
+  initial_foot_lf_B(1) = msg.actual.contacts[0].position.y;
+  initial_foot_lf_B(2) = msg.actual.contacts[0].position.z;
+
+  initial_foot_rf_B(0) = msg.actual.contacts[1].position.x;
+  initial_foot_rf_B(1) = msg.actual.contacts[1].position.y;
+  initial_foot_rf_B(2) = msg.actual.contacts[1].position.z;
+
+  initial_foot_lh_B(0) = msg.actual.contacts[2].position.x;
+  initial_foot_lh_B(1) = msg.actual.contacts[2].position.y;
+  initial_foot_lh_B(2) = msg.actual.contacts[2].position.z;
+
+  initial_foot_rh_B(0) = msg.actual.contacts[3].position.x;
+  initial_foot_rh_B(1) = msg.actual.contacts[3].position.y;
+  initial_foot_rh_B(2) = msg.actual.contacts[3].position.z;
+
+  //const EulerAngles euler_angles = initialBaseState.ang.at(kPos);
+  auto base_angular=EulerConverter(solution.base_angular_);
+  //Eigen::Matrix3d w_R_b = 
+  Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(initialBaseState.ang.at(kPos));
+  initial_foot_lf_W = w_R_b*initial_foot_lf_B + initialBaseState.lin.at(kPos);
+  initial_foot_rf_W = w_R_b*initial_foot_rf_B + initialBaseState.lin.at(kPos);
+  initial_foot_lh_W = w_R_b*initial_foot_lh_B + initialBaseState.lin.at(kPos);
+  initial_foot_rh_W = w_R_b*initial_foot_rh_B + initialBaseState.lin.at(kPos);
+
 }
 
 bool
@@ -100,21 +150,37 @@ TowrRosInterface::RecomputePlan(std_srvs::Empty::Request& req,
 //  // terrain
 //  auto terrain_id = static_cast<HeightMap::TerrainID>(msg.terrain);
 //  formulation_.terrain_ = HeightMap::MakeTerrain(terrain_id);
-//
-//  int n_ee = formulation_.model_.kinematic_model_->GetNumberOfEndeffectors();
-//  formulation_.params_ = GetTowrParameters(n_ee, msg);
-//  formulation_.final_base_ = GetGoalState(msg);
+
+  int n_ee = formulation_.model_.kinematic_model_->GetNumberOfEndeffectors();
+  //formulation_.params_ = GetTowrParameters(n_ee, msg);
+  //formulation_.final_base_ = GetGoalState(msg);
 //
 //  SetTowrInitialState();
 //
 //  // solver parameters
 //  SetIpoptParameters(msg);
-//
-//  // visualization
-//  PublishInitialState();
+
+ // visualization
+  PublishInitialState();
 
   // Defaults to /home/user/.ros/
+
+  formulation_.initial_base_ = GetInitialState();
+  formulation_.initial_ee_W_.push_back(initial_foot_lf_W);
+  formulation_.initial_ee_W_.push_back(initial_foot_rf_W);
+  formulation_.initial_ee_W_.push_back(initial_foot_lh_W);
+  formulation_.initial_ee_W_.push_back(initial_foot_rh_W);
+  std::cout<<"initial foot pos LF "<<initial_foot_lf_W.transpose()<<std::endl;
+  std::cout<<"initial foot pos RF "<<initial_foot_rf_W.transpose()<<std::endl;
+  std::cout<<"initial foot pos LH "<<initial_foot_lh_W.transpose()<<std::endl;
+  std::cout<<"initial foot pos RH "<<initial_foot_rh_W.transpose()<<std::endl;
+
+  std::cout<<"initial base pos"<<formulation_.initial_base_.lin.at(kPos)<<std::endl;
+
   std::string bag_file = "towr_trajectory.bag";
+  
+  solver_ = std::make_shared<ifopt::IpoptSolver>();
+  
 //  if (msg.optimize || msg.play_initialization) {
     nlp_ = ifopt::Problem();
     for (auto c : formulation_.GetVariableSets(solution))
@@ -141,6 +207,7 @@ TowrRosInterface::RecomputePlan(std_srvs::Empty::Request& req,
   //  int success = system(("killall rqt_bag; rqt_bag " + bag_file + "&").c_str());
   //}
 
+
   dwl_msgs::WholeBodyTrajectory wbtraj = ToRos();
 
   dwltrajectory_.publish(wbtraj);
@@ -165,13 +232,15 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
 
   SetTowrInitialState();
 
-  // solver parameters
-  SetIpoptParameters(msg);
 
   // visualization
   PublishInitialState();
 
   // Defaults to /home/user/.ros/
+  solver_ = std::make_shared<ifopt::IpoptSolver>();
+  // solver parameters
+  SetIpoptParameters(msg);
+  
   std::string bag_file = "towr_trajectory.bag";
   if (msg.optimize || msg.play_initialization) {
     nlp_ = ifopt::Problem();

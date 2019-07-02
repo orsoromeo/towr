@@ -37,6 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <std_srvs/Empty.h>
 
 #include <dwl_msgs/WholeBodyStateInterface.h>
+#include <dwl_msgs/WholeBodyController.h>
 #include <dwl/WholeBodyState.h>
 
 #include <xpp_states/robot_state_cartesian.h>
@@ -106,12 +107,23 @@ private:
   ros::ServiceServer recompute_plan_srv_;
 
   void UserCommandCallback(const TowrCommandMsg& msg);
-  void ReplanningCallback(const dwl_msgs::WholeBodyTrajectory & msg);
+  void ReplanningCallback(const dwl_msgs::WholeBodyController & msg);
   bool RecomputePlan(std_srvs::Empty::Request& req,
              std_srvs::Empty::Response& res);
 
   XppVec GetTrajectory() const;
   virtual BaseState GetGoalState(const TowrCommandMsg& msg) const;
+  BaseState GetInitialState();
+  BaseState initialBaseState;
+  Eigen::Vector3d initial_foot_lf_B = Eigen::Vector3d::Zero();
+  Eigen::Vector3d initial_foot_rf_B = Eigen::Vector3d::Zero();
+  Eigen::Vector3d initial_foot_lh_B = Eigen::Vector3d::Zero();
+  Eigen::Vector3d initial_foot_rh_B = Eigen::Vector3d::Zero();
+  Eigen::Vector3d initial_foot_lf_W = Eigen::Vector3d::Zero();
+  Eigen::Vector3d initial_foot_rf_W = Eigen::Vector3d::Zero();
+  Eigen::Vector3d initial_foot_lh_W = Eigen::Vector3d::Zero();
+  Eigen::Vector3d initial_foot_rh_W = Eigen::Vector3d::Zero();
+
   void PublishInitialState();
   std::vector<XppVec>GetIntermediateSolutions();
   xpp_msgs::RobotParameters BuildRobotParametersMsg(const RobotModel& model) const;

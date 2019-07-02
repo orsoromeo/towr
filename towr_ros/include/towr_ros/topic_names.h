@@ -37,6 +37,9 @@ namespace towr_msgs {
 // position of the desired goal to reach
 static const std::string user_command("/towr/user_command");
 
+// current state of the robot to initialize NLP
+static const std::string controller_command("/hyq/dls_supervisor/state");
+
 // iterations the nlp took to solve the problem. Used when processing rosbags
 static const std::string nlp_iterations_count("/towr/nlp_iterations_count");
 
