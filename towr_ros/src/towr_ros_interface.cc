@@ -143,45 +143,42 @@ TowrRosInterface::RecomputePlan(std_srvs::Empty::Request& req,
              std_srvs::Empty::Response& res)
 {
   // robot model
-//  formulation_.model_ = RobotModel(static_cast<RobotModel::Robot>(msg.robot));
-//  auto robot_params_msg = BuildRobotParametersMsg(formulation_.model_);
-//  robot_parameters_pub_.publish(robot_params_msg);
-//
-//  // terrain
-//  auto terrain_id = static_cast<HeightMap::TerrainID>(msg.terrain);
-//  formulation_.terrain_ = HeightMap::MakeTerrain(terrain_id);
+  //formulation_.model_ = RobotModel(static_cast<RobotModel::Robot>(msg.robot));
+  //auto robot_params_msg = BuildRobotParametersMsg(formulation_.model_);
+  //robot_parameters_pub_.publish(robot_params_msg);
 
-  int n_ee = formulation_.model_.kinematic_model_->GetNumberOfEndeffectors();
+  // terrain
+  //auto terrain_id = static_cast<HeightMap::TerrainID>(msg.terrain);
+  //formulation_.terrain_ = HeightMap::MakeTerrain(terrain_id);
+
+  //int n_ee = formulation_.model_.kinematic_model_->GetNumberOfEndeffectors();
   //formulation_.params_ = GetTowrParameters(n_ee, msg);
   //formulation_.final_base_ = GetGoalState(msg);
-//
-//  SetTowrInitialState();
-//
-//  // solver parameters
-//  SetIpoptParameters(msg);
 
- // visualization
-  PublishInitialState();
-
-  // Defaults to /home/user/.ros/
-
-  formulation_.initial_base_ = GetInitialState();
-  formulation_.initial_ee_W_.push_back(initial_foot_lf_W);
-  formulation_.initial_ee_W_.push_back(initial_foot_rf_W);
-  formulation_.initial_ee_W_.push_back(initial_foot_lh_W);
-  formulation_.initial_ee_W_.push_back(initial_foot_rh_W);
+  //formulation_.initial_base_ = GetInitialState();
+  std::vector<Eigen::Vector3d> initial_feet_pos;
+  initial_feet_pos.push_back(initial_foot_lf_W);
+  initial_feet_pos.push_back(initial_foot_rf_W);
+  initial_feet_pos.push_back(initial_foot_lh_W);
+  initial_feet_pos.push_back(initial_foot_rh_W);
   std::cout<<"initial foot pos LF "<<initial_foot_lf_W.transpose()<<std::endl;
   std::cout<<"initial foot pos RF "<<initial_foot_rf_W.transpose()<<std::endl;
   std::cout<<"initial foot pos LH "<<initial_foot_lh_W.transpose()<<std::endl;
   std::cout<<"initial foot pos RH "<<initial_foot_rh_W.transpose()<<std::endl;
-
   std::cout<<"initial base pos"<<formulation_.initial_base_.lin.at(kPos)<<std::endl;
+  //SetTowrInitialState(initial_feet_pos);
 
-  std::string bag_file = "towr_trajectory.bag";
-  
+
+  // visualization
+  PublishInitialState();
+
+  // Defaults to /home/user/.ros/
   solver_ = std::make_shared<ifopt::IpoptSolver>();
+  // solver parameters
+  //SetIpoptParameters(msg);
   
-//  if (msg.optimize || msg.play_initialization) {
+  std::string bag_file = "towr_trajectory.bag";
+  //if (msg.optimize || msg.play_initialization) {
     nlp_ = ifopt::Problem();
     for (auto c : formulation_.GetVariableSets(solution))
       nlp_.AddVariableSet(c);
@@ -207,10 +204,15 @@ TowrRosInterface::RecomputePlan(std_srvs::Empty::Request& req,
   //  int success = system(("killall rqt_bag; rqt_bag " + bag_file + "&").c_str());
   //}
 
+  // to publish entire trajectory (e.g. to send to controller)
+  xpp_msgs::RobotStateCartesianTrajectory xpp_msg = xpp::Convert::ToRos(GetTrajectory());
 
   dwl_msgs::WholeBodyTrajectory wbtraj = ToRos();
 
+  trajectory_.publish(xpp_msg);
+  //if (msg.optimize){
   dwltrajectory_.publish(wbtraj);
+  //}
   
 }
 
@@ -230,7 +232,7 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
   formulation_.params_ = GetTowrParameters(n_ee, msg);
   formulation_.final_base_ = GetGoalState(msg);
 
-  SetTowrInitialState();
+  SetTowrDefaultState();
 
 
   // visualization

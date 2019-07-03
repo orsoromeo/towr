@@ -72,7 +72,12 @@ protected:
   /**
    * @brief Sets the base state and end-effector position.
    */
-  virtual void SetTowrInitialState() = 0;
+  virtual void SetTowrInitialState(std::vector<Eigen::Vector3d> initial_feet_pos) = 0;
+
+    /**
+   * @brief Sets the base state and end-effector position.
+   */
+  virtual void SetTowrDefaultState() = 0;
 
   /**
    * @brief Formulates the actual TOWR problem to be solved
