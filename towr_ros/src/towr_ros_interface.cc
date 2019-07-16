@@ -166,7 +166,24 @@ TowrRosInterface::RecomputePlan(std_srvs::Empty::Request& req,
   std::cout<<"initial foot pos LH "<<initial_foot_lh_W.transpose()<<std::endl;
   std::cout<<"initial foot pos RH "<<initial_foot_rh_W.transpose()<<std::endl;
   std::cout<<"initial base pos"<<formulation_.initial_base_.lin.at(kPos)<<std::endl;
-  //SetTowrInitialState(initial_feet_pos);
+
+  std::cout<<"initial base pos from framework"<<initialBaseState.lin.at(kPos)<<std::endl;
+  
+  formulation_.initial_base_.lin.at(kPos)=initialBaseState.lin.at(kPos);
+  formulation_.initial_base_.lin.at(kVel)=initialBaseState.lin.at(kVel);
+  formulation_.initial_base_.ang.at(kPos)=initialBaseState.ang.at(kPos);
+  formulation_.initial_base_.ang.at(kVel)=initialBaseState.ang.at(kVel);
+
+  formulation_.initial_ee_W_.at(0)=initial_foot_lf_W;
+  formulation_.initial_ee_W_.at(1)=initial_foot_rf_W;
+  formulation_.initial_ee_W_.at(2)=initial_foot_lh_W;
+  formulation_.initial_ee_W_.at(3)=initial_foot_rh_W;
+
+  //formulation_.initial_ee_W_.at(0)<<0.31, 0.29,0;
+  //formulation_.initial_ee_W_.at(1)<<0.31, -0.29,0;
+  //formulation_.initial_ee_W_.at(2)<<-0.31, 0.29,0;
+  //formulation_.initial_ee_W_.at(3)<<-0.31, -0.29,0;
+  SetTowrInitialState(initial_feet_pos);
 
 
   // visualization
@@ -188,7 +205,7 @@ TowrRosInterface::RecomputePlan(std_srvs::Empty::Request& req,
       nlp_.AddCostSet(c);
 
     solver_->Solve(nlp_);
-  //  SaveOptimizationAsRosbag(bag_file, robot_params_msg, msg, false);
+    //SaveOptimizationAsRosbag(bag_file, robot_params_msg, msg, false);
   //}
 
   // playback using terminal commands
@@ -211,6 +228,10 @@ TowrRosInterface::RecomputePlan(std_srvs::Empty::Request& req,
 
   trajectory_.publish(xpp_msg);
   //if (msg.optimize){
+  char a;
+  std::cout<<"do you want to publish the trajectory? y/n"<<std::endl;
+  std::cin>>a;
+  if(a=='y')
   dwltrajectory_.publish(wbtraj);
   //}
   
@@ -277,6 +298,10 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
 
   trajectory_.publish(xpp_msg);
   if (msg.optimize){
+    char a;
+    std::cout<<"do you want to publish the trajectory? y/n"<<std::endl;
+    std::cin>>a;
+    if(a=='y')
     dwltrajectory_.publish(wbtraj);
   }
 }
