@@ -44,7 +44,7 @@ using EEPos            = std::vector<Eigen::Vector3d>;
 using Vector3d         = Eigen::Vector3d;
 using Ptr              = std::shared_ptr<IpoptSolver>;
 
-TEST(TOWR, optimizeTrajectory){
+TEST(TOWR, singleHopExampleTest){
         NlpFormulation formulation;
 	uint eeID = 0;
 
@@ -105,8 +105,8 @@ TEST(TOWR, optimizeTrajectory){
           //                      (solution.base_linear_, id::base_lin_nodes)) ;
           //
           //constraints.push_back(std::make_shared<SplineAccConstraint>
-          //                      (solution.base_angular_, id::base_ang_nodes)) ;
-          //
+          //                      (solution.base_angular_, id::base_ang_nodes));
+          
           //constraints.push_back(std::make_shared<DynamicConstraint>(formulation.model_.dynamic_model_,
           //                                                        formulation.params_.GetTotalTime(),
           //                                                        formulation.params_.dt_constraint_dynamic_,
@@ -145,11 +145,11 @@ TEST(TOWR, optimizeTrajectory){
           ////                                                            solution));
           ////BASE MOTION SEMPRE COMMENTATO!
           //
-          constraints.push_back(std::make_shared<RangeOfMotionConstraint>(formulation.model_.kinematic_model_,
-                                                                  formulation.params_.GetTotalTime(),
-                                                                  formulation.params_.dt_constraint_range_of_motion_,
-                                                                  ee_count,
-                                                                  solution));
+          //constraints.push_back(std::make_shared<RangeOfMotionConstraint>(formulation.model_.kinematic_model_,
+          //                                                        formulation.params_.GetTotalTime(),
+          //                                                        formulation.params_.dt_constraint_range_of_motion_,
+          //                                                        ee_count,
+          //                                                        solution));
 
 
 
