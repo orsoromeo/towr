@@ -117,6 +117,8 @@ NlpFormulation::MakeBaseVariables () const
   Vector3d final_pos(x, y, z);
 
   spline_lin->SetByLinearInterpolation(initial_base_.lin.p(), final_pos, params_.GetTotalTime());
+  std::cout<<"initial base pos in nlp"<<initial_base_.lin.p()<<std::endl;
+  std::cout<<"final base pos in nlp"<<final_pos<<std::endl;
   spline_lin->AddStartBound(kPos, {X,Y,Z}, initial_base_.lin.p());
   spline_lin->AddStartBound(kVel, {X,Y,Z}, initial_base_.lin.v());
   spline_lin->AddFinalBound(kPos, params_.bounds_final_lin_pos_,   final_base_.lin.p());
@@ -157,6 +159,7 @@ NlpFormulation::MakeEndeffectorVariables () const
     double y = final_ee_pos_W.y();
     double z = terrain_->GetHeight(x,y);
     nodes->SetByLinearInterpolation(initial_ee_W_.at(ee), Vector3d(x,y,z), T);
+    std::cout<<"initial foot in nlp"<<initial_ee_W_.at(ee)<<std::endl;
 
     nodes->AddStartBound(kPos, {X,Y,Z}, initial_ee_W_.at(ee));
     vars.push_back(nodes);
