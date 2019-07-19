@@ -65,7 +65,7 @@ TowrRosInterface::TowrRosInterface ()
 
   dwltrajectory_=n.advertise<dwl_msgs::WholeBodyTrajectory>("hyq/plan",1);
 
-  recompute_plan_srv_ = n.advertiseService("trigger_replanning", &TowrRosInterface::RecomputePlan, this);
+  recompute_sub = n.subscribe("/hyq/recompute", 1, &TowrRosInterface::RecomputePlan, this);
 
   solver_ = std::make_shared<ifopt::IpoptSolver>();
 
@@ -143,9 +143,8 @@ void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & 
 
 }
 
-bool
-TowrRosInterface::RecomputePlan(std_srvs::Empty::Request& req,
-             std_srvs::Empty::Response& res)
+void
+TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
 {
   // robot model
   //formulation_.model_ = RobotModel(static_cast<RobotModel::Robot>(msg.robot));
@@ -161,6 +160,9 @@ TowrRosInterface::RecomputePlan(std_srvs::Empty::Request& req,
   //formulation_.final_base_ = GetGoalState(msg);
 
   //formulation_.initial_base_ = GetInitialState();
+  formulation_.final_base_.lin.at(kPos).x()=msg.x;
+  formulation_.final_base_.lin.at(kPos).y()=msg.y;
+  formulation_.final_base_.lin.at(kPos).z()=msg.z;
   std::vector<Eigen::Vector3d> initial_feet_pos;
   initial_feet_pos.push_back(initial_foot_lf_W);
   initial_feet_pos.push_back(initial_foot_rf_W);
@@ -232,7 +234,8 @@ TowrRosInterface::RecomputePlan(std_srvs::Empty::Request& req,
   dwl_msgs::WholeBodyTrajectory wbtraj = ToRos();
 
   trajectory_.publish(xpp_msg);
-  //if (msg.optimize){
+  std::cout<<"goal is: "<<std::endl;
+  std::cout<<formulation_.final_base_.lin.at(kPos)<<std::endl;
   char a;
   std::cout<<"do you want to publish the trajectory? y/n"<<std::endl;
   std::cin>>a;

@@ -109,12 +109,11 @@ private:
   ::ros::Publisher trajectory_;
   ::ros::Publisher dwltrajectory_;
 
-  ros::ServiceServer recompute_plan_srv_;
+  ::ros::Subscriber recompute_sub;
 
   void UserCommandCallback(const TowrCommandMsg& msg);
   void ReplanningCallback(const dwl_msgs::WholeBodyController & msg);
-  bool RecomputePlan(std_srvs::Empty::Request& req,
-             std_srvs::Empty::Response& res);
+  void RecomputePlan(const geometry_msgs::Vector3& msg);
 
   XppVec GetTrajectory() const;
   virtual BaseState GetGoalState(const TowrCommandMsg& msg) const;

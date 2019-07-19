@@ -7,6 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rosbag
   std_msgs
+  geometry_msgs
   visualization_msgs
   message_generation
   xpp_hyq #l'ho aggiunto io
@@ -20,7 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## Generate messages in the 'msg' folder
 add_message_files( FILES TowrCommand.msg )
-generate_messages( DEPENDENCIES std_msgs xpp_msgs dwl_msgs)
+generate_messages( DEPENDENCIES std_msgs geometry_msgs xpp_msgs dwl_msgs)
 
 
 ###################################
