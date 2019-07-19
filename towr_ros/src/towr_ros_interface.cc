@@ -127,14 +127,19 @@ void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & 
   initial_foot_rh_B(1) = msg.actual.contacts[3].position.y;
   initial_foot_rh_B(2) = msg.actual.contacts[3].position.z;
 
+  //std::cout<<"initial foot pos B CALLBACK"<<initial_foot_rh_B.transpose()<<std::endl;
+
   //const EulerAngles euler_angles = initialBaseState.ang.at(kPos);
   auto base_angular=EulerConverter(solution.base_angular_);
+  //std::cout<<"solution.base_angular_ "<<solution.base_angular_<<std::endl;
   //Eigen::Matrix3d w_R_b = 
   Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(initialBaseState.ang.at(kPos));
   initial_foot_lf_W = w_R_b*initial_foot_lf_B + initialBaseState.lin.at(kPos);
   initial_foot_rf_W = w_R_b*initial_foot_rf_B + initialBaseState.lin.at(kPos);
   initial_foot_lh_W = w_R_b*initial_foot_lh_B + initialBaseState.lin.at(kPos);
   initial_foot_rh_W = w_R_b*initial_foot_rh_B + initialBaseState.lin.at(kPos);
+  
+  //std::cout<<"initial foot pos W CALLBACK"<<initial_foot_rh_W.transpose()<<std::endl;
 
 }
 
@@ -231,8 +236,17 @@ TowrRosInterface::RecomputePlan(std_srvs::Empty::Request& req,
   char a;
   std::cout<<"do you want to publish the trajectory? y/n"<<std::endl;
   std::cin>>a;
-  if(a=='y')
-  dwltrajectory_.publish(wbtraj);
+  if(a=='y'){
+    std::cout<<"New trajectory being published."<<std::endl;
+    dwltrajectory_.publish(wbtraj);
+  }else{
+    if(a=='n'){  
+      std::cout<<"New trajectory will not be published."<<std::endl;
+    }else{
+      std::cout<<"Please re-optimize and then enter a valid digit (either y or n)."<<std::endl;
+    }
+  }
+
   //}
   
 }
@@ -301,8 +315,16 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
     char a;
     std::cout<<"do you want to publish the trajectory? y/n"<<std::endl;
     std::cin>>a;
-    if(a=='y')
-    dwltrajectory_.publish(wbtraj);
+    if(a=='y'){
+      std::cout<<"New trajectory being published."<<std::endl;
+      dwltrajectory_.publish(wbtraj);
+    }else{
+      if(a=='n'){  
+        std::cout<<"New trajectory will not be published."<<std::endl;
+      }else{
+        std::cout<<"Please re-optimize and then enter a valid digit (either y or n)."<<std::endl;
+      }
+    }
   }
 }
 
