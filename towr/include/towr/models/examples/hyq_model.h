@@ -61,8 +61,8 @@ public:
  */
 class HyqDynamicModel : public SingleRigidBodyDynamics {
 public:
-  HyqDynamicModel() : SingleRigidBodyDynamics(83,
-                      4.26, 8.97, 9.88, -0.0063, 0.193, 0.0126,
+  HyqDynamicModel() : SingleRigidBodyDynamics(86.8659,
+                      4.0745, 11.3576, 12.5675, 0.1458, -0.2245, -0.0133,
                       4) {}
 };
 
