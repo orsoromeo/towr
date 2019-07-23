@@ -135,6 +135,9 @@ private:
                                 const xpp_msgs::RobotParameters& robot_params,
                                 const TowrCommandMsg user_command_msg,
                                 bool include_iterations=false);
+  void SaveOptimizationAsRosbag(const std::string& bag_name,
+                                const xpp_msgs::RobotParameters& robot_params,
+                                bool include_iterations=false);
   void SaveTrajectoryInRosbag (rosbag::Bag&,
                                const std::vector<xpp::RobotStateCartesian>& traj,
                                const std::string& topic) const;

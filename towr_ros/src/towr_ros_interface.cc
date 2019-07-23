@@ -39,6 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr/variables/euler_converter.h>
 #include <towr_ros/topic_names.h>
 #include <towr_ros/towr_xpp_ee_map.h>
+#include <ctime>
 
 
 
@@ -148,8 +149,8 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
 {
   // robot model
   //formulation_.model_ = RobotModel(static_cast<RobotModel::Robot>(msg.robot));
-  //auto robot_params_msg = BuildRobotParametersMsg(formulation_.model_);
-  //robot_parameters_pub_.publish(robot_params_msg);
+  auto robot_params_msg = BuildRobotParametersMsg(formulation_.model_);
+  robot_parameters_pub_.publish(robot_params_msg);
 
   // terrain
   //auto terrain_id = static_cast<HeightMap::TerrainID>(msg.terrain);
@@ -201,6 +202,10 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   // solver parameters
   //SetIpoptParameters(msg);
   
+  //time_t ct;
+  //ct = &time(NULL);
+  //std::cout << ctime(&ct);
+  //std::string bag_file = "towr_trajectory" + ctime(&ct)+ ".bag";
   std::string bag_file = "towr_trajectory.bag";
   //if (msg.optimize || msg.play_initialization) {
     nlp_ = ifopt::Problem();
@@ -212,17 +217,18 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
       nlp_.AddCostSet(c);
 
     solver_->Solve(nlp_);
-    //SaveOptimizationAsRosbag(bag_file, robot_params_msg, msg, false);
+   SaveOptimizationAsRosbag(bag_file, robot_params_msg, false);
+   int success = system(("rosbag play --topics "
+       + xpp_msgs::robot_state_desired + " "
+       + xpp_msgs::terrain_info
+       + " -r " + std::to_string(1.0)
+       + " --quiet " + bag_file).c_str());
+    
   //}
 
   // playback using terminal commands
   //if (msg.replay_trajectory || msg.play_initialization || msg.optimize) {
-  //  int success = system(("rosbag play --topics "
-  //      + xpp_msgs::robot_state_desired + " "
-  //      + xpp_msgs::terrain_info
-  //      + " -r " + std::to_string(msg.replay_speed)
-  //      + " --quiet " + bag_file).c_str());
-  //}
+
 
   //if (msg.plot_trajectory) {
   //  int success = system(("killall rqt_bag; rqt_bag " + bag_file + "&").c_str());
@@ -281,6 +287,10 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
   // solver parameters
   SetIpoptParameters(msg);
   
+  //time_t ct;
+  //ct = &time(NULL);
+  //std::cout << ctime(&ct);
+  //std::string bag_file = "towr_trajectory" + ctime(&ct)+ ".bag";
   std::string bag_file = "towr_trajectory.bag";
   if (msg.optimize || msg.play_initialization) {
     nlp_ = ifopt::Problem();
@@ -292,7 +302,7 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
       nlp_.AddCostSet(c);
 
     solver_->Solve(nlp_);
-    SaveOptimizationAsRosbag(bag_file, robot_params_msg, msg, false);
+    SaveOptimizationAsRosbag(bag_file, robot_params_msg, msg,false);
   }
 
   // playback using terminal commands
@@ -569,6 +579,38 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
     std::cout<<"i am here2"<<std::endl;
     return planned_wt;
   }
-    
+  void
+TowrRosInterface::SaveOptimizationAsRosbag (const std::string& bag_name,
+                                   const xpp_msgs::RobotParameters& robot_params,
+                                   //const TowrCommandMsg user_command_msg,
+                                   bool include_iterations)
+{
+  rosbag::Bag bag;
+  bag.open(bag_name, rosbag::bagmode::Write);
+  ::ros::Time t0(1e-6); // t=0.0 throws ROS exception
+
+  // save the a-priori fixed optimization variables
+  bag.write(xpp_msgs::robot_parameters, t0, robot_params);
+  //bag.write(towr_msgs::user_command+"_saved", t0, user_command_msg);
+
+  // save the trajectory of each iteration
+  if (include_iterations) {
+    auto trajectories = GetIntermediateSolutions();
+    int n_iterations = trajectories.size();
+    for (int i=0; i<n_iterations; ++i)
+      SaveTrajectoryInRosbag(bag, trajectories.at(i), towr_msgs::nlp_iterations_name + std::to_string(i));
+
+    // save number of iterations the optimizer took
+    std_msgs::Int32 m;
+    m.data = n_iterations;
+    bag.write(towr_msgs::nlp_iterations_count, t0, m);
+  }
+
+  // save the final trajectory
+  auto final_trajectory = GetTrajectory();
+  SaveTrajectoryInRosbag(bag, final_trajectory, xpp_msgs::robot_state_desired);
+
+  bag.close();
+}
 } /* namespace towr */
 
