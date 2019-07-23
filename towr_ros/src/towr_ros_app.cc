@@ -54,7 +54,7 @@ public:
                   [&](Vector3d& p){ p.z() = z_ground; } // feet at 0 height
     );
 
-    formulation_.initial_base_.lin.at(kPos).z() = - nominal_stance_B.front().z() + z_ground;
+    formulation_.initial_base_.lin.at(kPos).z() -=  0.02;
   }
 
   void SetTowrDefaultState() override

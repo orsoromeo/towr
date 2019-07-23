@@ -107,7 +107,7 @@ void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & 
   initialBaseState.lin.at(kVel)(0) = msg.actual.base[3].velocity;
   initialBaseState.lin.at(kVel)(1) = msg.actual.base[4].velocity;
   initialBaseState.lin.at(kVel)(2) = msg.actual.base[5].velocity;
-  //std::cout<<"initial base pos CALLBACK"<<initialBaseState.lin.at(kPos).transpose()<<std::endl;
+  std::cout<<"initial base pos CALLBACK"<<initialBaseState.lin.at(kPos).transpose()<<std::endl;
   //initialBaseState.ang.at(kPos) = msg.actual.base;
   //initialBaseState.ang.at(kVel) = msg.actual.base;
 
@@ -148,7 +148,7 @@ void
 TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
 {
   // robot model
-  //formulation_.model_ = RobotModel(static_cast<RobotModel::Robot>(msg.robot));
+  //formulation_.model_ = RobotModel(RobotModel::Hyq);
   auto robot_params_msg = BuildRobotParametersMsg(formulation_.model_);
   robot_parameters_pub_.publish(robot_params_msg);
 
@@ -161,9 +161,8 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   //formulation_.final_base_ = GetGoalState(msg);
 
   //formulation_.initial_base_ = GetInitialState();
-  formulation_.final_base_.lin.at(kPos).x()=msg.x;
-  formulation_.final_base_.lin.at(kPos).y()=msg.y;
-  formulation_.final_base_.lin.at(kPos).z()=msg.z;
+
+  
   std::vector<Eigen::Vector3d> initial_feet_pos;
   initial_feet_pos.push_back(initial_foot_lf_W);
   initial_feet_pos.push_back(initial_foot_rf_W);
@@ -196,6 +195,12 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
 
   // visualization
   PublishInitialState();
+
+  formulation_.final_base_.lin.at(kPos).x()=msg.x;
+  formulation_.final_base_.lin.at(kPos).y()=msg.y;
+  formulation_.final_base_.lin.at(kPos).z()=msg.z;
+  std::cout<<"goal is: "<<std::endl;
+  std::cout<<formulation_.final_base_.lin.at(kPos)<<std::endl;
 
   // Defaults to /home/user/.ros/
   solver_ = std::make_shared<ifopt::IpoptSolver>();
@@ -240,8 +245,7 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   dwl_msgs::WholeBodyTrajectory wbtraj = ToRos();
 
   trajectory_.publish(xpp_msg);
-  std::cout<<"goal is: "<<std::endl;
-  std::cout<<formulation_.final_base_.lin.at(kPos)<<std::endl;
+  
   char a;
   std::cout<<"do you want to publish the trajectory? y/n"<<std::endl;
   std::cin>>a;
@@ -503,7 +507,7 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
       Eigen::Vector3d footPosDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).p() - solution.base_linear_->GetPoint(t).p());
       contact.position.x = footPosDesCoM(0);
       contact.position.y = footPosDesCoM(1);
-      contact.position.z = footPosDesCoM(2);
+      contact.position.z = footPosDesCoM(2)+0.02;
 
       Eigen::Vector3d footVelDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).v() - solution.base_linear_->GetPoint(t).v());
       contact.velocity.x = footVelDesCoM(0);
@@ -570,12 +574,21 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
       {
        case 0: base_state.id = base_state.LX; break;
        case 1: base_state.id = base_state.LY; break;
-       case 2: base_state.id = base_state.LZ; break;
+       case 2: {
+                base_state.id = base_state.LZ;
+                base_state.position += 0.02;
+                break;}
 
       }
       planned_wbs_msg.base.push_back(base_state);
     }
     planned_wt.trajectory.push_back(planned_wbs_msg);}
+    double t = 0.0;
+            while (t<=solution.base_linear_->GetTotalTime() + 1e-5) {
+            std::cout << "t=" << t << "\n";
+            std::cout << "Base linear position x,y,z:   \t";
+            std::cout << solution.base_linear_->GetPoint(t).p().transpose() << "\t[m]" << std::endl;
+          t += 0.1;}
     std::cout<<"i am here2"<<std::endl;
     return planned_wt;
   }
