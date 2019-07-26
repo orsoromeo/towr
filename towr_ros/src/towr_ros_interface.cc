@@ -89,7 +89,10 @@ BaseState TowrRosInterface::GetInitialState()
 {
   return initialBaseState;
 }
-
+BaseState TowrRosInterface::GetInitialStateCoM()
+{
+  return initialCoMState;
+}
 
 void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & msg){
   initialBaseState.ang.at(kPos)(0) = msg.actual.base[0].position;
@@ -107,7 +110,6 @@ void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & 
   initialBaseState.lin.at(kVel)(0) = msg.actual.base[3].velocity;
   initialBaseState.lin.at(kVel)(1) = msg.actual.base[4].velocity;
   initialBaseState.lin.at(kVel)(2) = msg.actual.base[5].velocity;
-  std::cout<<"initial base pos CALLBACK"<<initialBaseState.lin.at(kPos).transpose()<<std::endl;
   //initialBaseState.ang.at(kPos) = msg.actual.base;
   //initialBaseState.ang.at(kVel) = msg.actual.base;
 
@@ -139,6 +141,11 @@ void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & 
   initial_foot_rf_W = w_R_b*initial_foot_rf_B + initialBaseState.lin.at(kPos);
   initial_foot_lh_W = w_R_b*initial_foot_lh_B + initialBaseState.lin.at(kPos);
   initial_foot_rh_W = w_R_b*initial_foot_rh_B + initialBaseState.lin.at(kPos);
+  Vector3d offset;
+  offset<<0.0229786, 5.2e-5, -0.0397;
+
+  initialCoMState.lin.at(kPos) = initialBaseState.lin.at(kPos)+ w_R_b*offset;
+
   
   //std::cout<<"initial foot pos W CALLBACK"<<initial_foot_rh_W.transpose()<<std::endl;
 
@@ -176,7 +183,7 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
 
   std::cout<<"initial base pos from framework"<<initialBaseState.lin.at(kPos)<<std::endl;
   
-  formulation_.initial_base_.lin.at(kPos)=initialBaseState.lin.at(kPos);
+  formulation_.initial_base_.lin.at(kPos)=initialCoMState.lin.at(kPos);
   formulation_.initial_base_.lin.at(kVel)=initialBaseState.lin.at(kVel);
   formulation_.initial_base_.ang.at(kPos)=initialBaseState.ang.at(kPos);
   formulation_.initial_base_.ang.at(kVel)=initialBaseState.ang.at(kVel);
