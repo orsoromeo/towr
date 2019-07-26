@@ -119,6 +119,8 @@ private:
   virtual BaseState GetGoalState(const TowrCommandMsg& msg) const;
   BaseState GetInitialState();
   BaseState initialBaseState;
+  BaseState GetInitialStateCoM();
+  BaseState initialCoMState;
   Eigen::Vector3d initial_foot_lf_B = Eigen::Vector3d::Zero();
   Eigen::Vector3d initial_foot_rf_B = Eigen::Vector3d::Zero();
   Eigen::Vector3d initial_foot_lh_B = Eigen::Vector3d::Zero();
