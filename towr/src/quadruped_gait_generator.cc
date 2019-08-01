@@ -198,7 +198,7 @@ QuadrupedGaitGenerator::GetStrideWalkOverlap () const
       bB_, bb_, Bb_,
       Pb_, // start lifting RH
       PB_, PP_, BP_,
-      bP_, // start lifting LH
+      BP_, // start lifting LH
   };
 
   return std::make_pair(times, phase_contacts);
