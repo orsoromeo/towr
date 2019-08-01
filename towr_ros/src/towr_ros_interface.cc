@@ -98,7 +98,7 @@ void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & 
   initialBaseState.ang.at(kPos)(0) = msg.actual.base[0].position;
   initialBaseState.ang.at(kPos)(1) = msg.actual.base[1].position;
   initialBaseState.ang.at(kPos)(2) = msg.actual.base[2].position;
-
+  
   initialBaseState.ang.at(kVel)(0) = msg.actual.base[0].velocity;
   initialBaseState.ang.at(kVel)(1) = msg.actual.base[1].velocity;
   initialBaseState.ang.at(kVel)(2) = msg.actual.base[2].velocity;
@@ -117,7 +117,7 @@ void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & 
   initial_foot_lf_B(0) = msg.actual.contacts[0].position.x;
   initial_foot_lf_B(1) = msg.actual.contacts[0].position.y;
   initial_foot_lf_B(2) = msg.actual.contacts[0].position.z;
-
+ 
   initial_foot_rf_B(0) = msg.actual.contacts[1].position.x;
   initial_foot_rf_B(1) = msg.actual.contacts[1].position.y;
   initial_foot_rf_B(2) = msg.actual.contacts[1].position.z;
@@ -129,24 +129,25 @@ void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & 
   initial_foot_rh_B(0) = msg.actual.contacts[3].position.x;
   initial_foot_rh_B(1) = msg.actual.contacts[3].position.y;
   initial_foot_rh_B(2) = msg.actual.contacts[3].position.z;
-
+  
   //std::cout<<"initial foot pos B CALLBACK"<<initial_foot_rh_B.transpose()<<std::endl;
 
   //const EulerAngles euler_angles = initialBaseState.ang.at(kPos);
   auto base_angular=EulerConverter(solution.base_angular_);
-  //std::cout<<"solution.base_angular_ "<<solution.base_angular_<<std::endl;
-  //Eigen::Matrix3d w_R_b = 
-  Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(initialBaseState.ang.at(kPos));
-  initial_foot_lf_W = w_R_b*initial_foot_lf_B + initialBaseState.lin.at(kPos);
-  initial_foot_rf_W = w_R_b*initial_foot_rf_B + initialBaseState.lin.at(kPos);
-  initial_foot_lh_W = w_R_b*initial_foot_lh_B + initialBaseState.lin.at(kPos);
-  initial_foot_rh_W = w_R_b*initial_foot_rh_B + initialBaseState.lin.at(kPos);
   Vector3d offset;
+  Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(initialBaseState.ang.at(kPos));
   offset<<0.0229786, 5.2e-5, -0.0397;
-
   initialCoMState.lin.at(kPos) = initialBaseState.lin.at(kPos)+ w_R_b*offset;
 
+
+  initial_foot_lf_W = w_R_b*initial_foot_lf_B + initialCoMState.lin.at(kPos);
+  initial_foot_rf_W = w_R_b*initial_foot_rf_B + initialCoMState.lin.at(kPos);
+  initial_foot_lh_W = w_R_b*initial_foot_lh_B + initialCoMState.lin.at(kPos);
+  initial_foot_rh_W = w_R_b*initial_foot_rh_B + initialCoMState.lin.at(kPos);
   
+
+
+
   //std::cout<<"initial foot pos W CALLBACK"<<initial_foot_rh_W.transpose()<<std::endl;
 
 }
@@ -181,7 +182,7 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   std::cout<<"initial foot pos RH "<<initial_foot_rh_W.transpose()<<std::endl;
   std::cout<<"initial base pos"<<formulation_.initial_base_.lin.at(kPos)<<std::endl;
 
-  std::cout<<"initial base pos from framework"<<initialBaseState.lin.at(kPos)<<std::endl;
+ 
   
   formulation_.initial_base_.lin.at(kPos)=initialCoMState.lin.at(kPos);
   formulation_.initial_base_.lin.at(kVel)=initialBaseState.lin.at(kVel);
@@ -197,7 +198,7 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   //formulation_.initial_ee_W_.at(1)<<0.31, -0.29,0;
   //formulation_.initial_ee_W_.at(2)<<-0.31, 0.29,0;
   //formulation_.initial_ee_W_.at(3)<<-0.31, -0.29,0;
-  SetTowrInitialState(initial_feet_pos);
+  SetTowrInitialState(initial_feet_pos); 
 
 
   // visualization
@@ -506,17 +507,20 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
   {
 
     double t=i*0.004;
-    Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(t);
     dwl_msgs::WholeBodyState planned_wbs_msg;
     for(int ee=0; ee<solution.ee_motion_.size(); ee++)
     {
       dwl_msgs::ContactState contact;
-      Eigen::Vector3d footPosDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).p() - solution.base_linear_->GetPoint(t).p());
+      Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(t);
+      Eigen::Vector3d footPosDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).p()-solution.base_linear_->GetPoint(t).p());
       contact.position.x = footPosDesCoM(0);
       contact.position.y = footPosDesCoM(1);
-      contact.position.z = footPosDesCoM(2)+0.02;
-
+      contact.position.z = footPosDesCoM(2); 
       Eigen::Vector3d footVelDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).v() - solution.base_linear_->GetPoint(t).v());
+     
+
+
+
       contact.velocity.x = footVelDesCoM(0);
       contact.velocity.y = footVelDesCoM(1);
       contact.velocity.z = footVelDesCoM(2);
@@ -590,13 +594,20 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
       planned_wbs_msg.base.push_back(base_state);
     }
     planned_wt.trajectory.push_back(planned_wbs_msg);}
-    double t = 0.0;
-            while (t<=solution.base_linear_->GetTotalTime() + 1e-5) {
-            std::cout << "t=" << t << "\n";
-            std::cout << "Base linear position x,y,z:   \t";
-            std::cout << solution.base_linear_->GetPoint(t).p().transpose() << "\t[m]" << std::endl;
-          t += 0.1;}
-    std::cout<<"i am here2"<<std::endl;
+    //double t = 0.0;
+    //        while (t<=solution.base_linear_->GetTotalTime() + 1e-5) {
+    //        std::cout << "t=" << t << "\n";
+    //        std::cout << "LF ee_motion position x,y,z:   \t";
+    //        std::cout << solution.ee_motion_.at(0)->GetPoint(t).p().transpose() << "\t[m]" << std::endl;
+    //            Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(t);
+
+    //        Vector3d offset;
+    //  offset<<0.0229786, 5.2e-5, -0.0397;
+    //  Eigen::Vector3d footPosDesBase = w_R_b.transpose()*(solution.ee_motion_.at(0)->GetPoint(t).p()- (solution.base_linear_->GetPoint(t).p()-w_R_b*offset));
+    //  std::cout << "LF ee_motion position x,y,z in base frame:   \t";
+    //        std::cout << footPosDesBase.transpose() << "\t[m]" << std::endl;
+    //      t += 0.1;}
+    //std::cout<<"i am here2"<<std::endl;
     return planned_wt;
   }
   void
