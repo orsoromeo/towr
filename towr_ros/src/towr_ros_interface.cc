@@ -140,10 +140,10 @@ void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & 
   initialCoMState.lin.at(kPos) = initialBaseState.lin.at(kPos)+ w_R_b*offset;
 
 
-  initial_foot_lf_W = w_R_b*initial_foot_lf_B + initialCoMState.lin.at(kPos);
-  initial_foot_rf_W = w_R_b*initial_foot_rf_B + initialCoMState.lin.at(kPos);
-  initial_foot_lh_W = w_R_b*initial_foot_lh_B + initialCoMState.lin.at(kPos);
-  initial_foot_rh_W = w_R_b*initial_foot_rh_B + initialCoMState.lin.at(kPos);
+  initial_foot_lf_W = w_R_b*initial_foot_lf_B + initialBaseState.lin.at(kPos);
+  initial_foot_rf_W = w_R_b*initial_foot_rf_B + initialBaseState.lin.at(kPos);
+  initial_foot_lh_W = w_R_b*initial_foot_lh_B + initialBaseState.lin.at(kPos);
+  initial_foot_rh_W = w_R_b*initial_foot_rh_B + initialBaseState.lin.at(kPos);
   
 
 
@@ -180,6 +180,7 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   std::cout<<"initial foot pos RF "<<initial_foot_rf_W.transpose()<<std::endl;
   std::cout<<"initial foot pos LH "<<initial_foot_lh_W.transpose()<<std::endl;
   std::cout<<"initial foot pos RH "<<initial_foot_rh_W.transpose()<<std::endl;
+
   std::cout<<"initial base pos"<<formulation_.initial_base_.lin.at(kPos)<<std::endl;
 
  
