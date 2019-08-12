@@ -135,12 +135,11 @@ void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & 
   double average_foot_height = (initial_foot_lf_B(2) + initial_foot_rf_B(2) + initial_foot_lh_B(2) + initial_foot_rh_B(2))/4.0;
   double robot_height = initialBaseState.lin.at(kPos)(2) - average_foot_height;
   initialBaseState.lin.at(kPos)(2) = robot_height;
-  std::cout<<"Inizial base Z is : "<<initialBaseState.lin.at(kPos)(2)<<std::endl;
 
-  std::cout<<"Average foot height is : "<<average_foot_height<<std::endl;
-  std::cout<<"Average robot's height is: "<<robot_height<<std::endl;
+  //std::cout<<"Average foot height is : "<<average_foot_height<<std::endl;
+  //std::cout<<"Average robot's height is: "<<robot_height<<std::endl;
 
-  std::cout<<"initial foot pos B CALLBACK"<<initial_foot_rh_B.transpose()<<std::endl;
+  //std::cout<<"initial foot pos B CALLBACK"<<initial_foot_rh_B.transpose()<<std::endl;
 
 
   //const EulerAngles euler_angles = initialBaseState.ang.at(kPos);
