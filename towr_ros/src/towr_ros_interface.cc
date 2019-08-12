@@ -133,7 +133,7 @@ void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & 
   /* this is needed to decouple the planning from the base Z coordinate given by 
   the DLS framework's state estimator */
   double average_foot_height = (initial_foot_lf_B(2) + initial_foot_rf_B(2) + initial_foot_lh_B(2) + initial_foot_rh_B(2))/4.0;
-  double robot_height = initialBaseState.lin.at(kPos)(2) - average_foot_height;
+  double robot_height = - average_foot_height;
   initialBaseState.lin.at(kPos)(2) = robot_height;
 
   //std::cout<<"Average foot height is : "<<average_foot_height<<std::endl;
