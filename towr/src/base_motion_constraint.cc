@@ -51,8 +51,8 @@ BaseMotionConstraint::BaseMotionConstraint (double T, double dt,
   double z_init = base_linear_->GetPoint(0.0).p().z();
   node_bounds_.at(LX) = ifopt::NoBound;
   node_bounds_.at(LY) = ifopt::NoBound;//Bounds(-0.05, 0.05);
-  node_bounds_.at(LZ) = Bounds(z_init-0.02, z_init+0.1); // allow to move dev_z cm up and down
-
+  node_bounds_.at(LZ) = Bounds(z_init-0.04, z_init+0.3); // allow to move dev_z cm up and down
+  std::cout<<"base costranit"<<std::endl;
   int n_constraints_per_node = node_bounds_.size();
   SetRows(GetNumberOfNodes()*n_constraints_per_node);
   
