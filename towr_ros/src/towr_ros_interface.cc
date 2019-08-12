@@ -130,7 +130,17 @@ void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & 
   initial_foot_rh_B(1) = msg.actual.contacts[3].position.y;
   initial_foot_rh_B(2) = msg.actual.contacts[3].position.z;
 
-  //std::cout<<"initial foot pos B CALLBACK"<<initial_foot_rh_B.transpose()<<std::endl;
+  /* this is needed to decouple the planning from the base Z coordinate given by 
+  the DLS framework's state estimator */
+  double average_foot_height = (initial_foot_lf_B(2) + initial_foot_rf_B(2) + initial_foot_lh_B(2) + initial_foot_rh_B(2))/4.0;
+  double robot_height = initialBaseState.lin.at(kPos)(2) - average_foot_height;
+  initialBaseState.lin.at(kPos)(2) = robot_height;
+  std::cout<<"Inizial base Z is : "<<initialBaseState.lin.at(kPos)(2)<<std::endl;
+
+  std::cout<<"Average foot height is : "<<average_foot_height<<std::endl;
+  std::cout<<"Average robot's height is: "<<robot_height<<std::endl;
+
+  std::cout<<"initial foot pos B CALLBACK"<<initial_foot_rh_B.transpose()<<std::endl;
 
   //const EulerAngles euler_angles = initialBaseState.ang.at(kPos);
   auto base_angular=EulerConverter(solution.base_angular_);
@@ -175,10 +185,10 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   initial_feet_pos.push_back(initial_foot_rf_W);
   initial_feet_pos.push_back(initial_foot_lh_W);
   initial_feet_pos.push_back(initial_foot_rh_W);
-  std::cout<<"initial foot pos LF "<<initial_foot_lf_W.transpose()<<std::endl;
-  std::cout<<"initial foot pos RF "<<initial_foot_rf_W.transpose()<<std::endl;
-  std::cout<<"initial foot pos LH "<<initial_foot_lh_W.transpose()<<std::endl;
-  std::cout<<"initial foot pos RH "<<initial_foot_rh_W.transpose()<<std::endl;
+  std::cout<<"initial foot pos LF WF: "<<initial_foot_lf_W.transpose()<<std::endl;
+  std::cout<<"initial foot pos RF WF: "<<initial_foot_rf_W.transpose()<<std::endl;
+  std::cout<<"initial foot pos LH WF: "<<initial_foot_lh_W.transpose()<<std::endl;
+  std::cout<<"initial foot pos RH WF: "<<initial_foot_rh_W.transpose()<<std::endl;
   std::cout<<"initial base pos"<<formulation_.initial_base_.lin.at(kPos)<<std::endl;
 
   std::cout<<"initial base pos from framework"<<initialBaseState.lin.at(kPos)<<std::endl;
