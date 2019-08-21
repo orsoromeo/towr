@@ -128,6 +128,30 @@ public:
     else
       solver_->SetOption("max_iter", 3000);
   }
+  Parameters GetTowrParametersReplanningCallback(int n_ee, double time) const override
+  {
+    Parameters params;
+
+    // Instead of manually defining the initial durations for each foot and
+    // step, for convenience we use a GaitGenerator with some predefined gaits
+    // for a variety of robots (walk, trot, pace, ...).
+    auto gait_gen_ = GaitGenerator::MakeGaitGenerator(n_ee);
+    auto id_gait   = static_cast<GaitGenerator::Combos>(GaitGenerator::C0);
+    gait_gen_->SetCombo(id_gait);
+    for (int ee=0; ee<n_ee; ++ee) {
+      params.ee_phase_durations_.push_back(gait_gen_->GetPhaseDurations(time, ee));
+      params.ee_in_contact_at_start_.push_back(gait_gen_->IsInContactAtStart(ee));
+    }
+
+    // Here you can also add other constraints or change parameters
+    // params.constraints_.push_back(Parameters::BaseRom);
+
+    // increases optimization time, but sometimes helps find a solution for
+    // more difficult terrain.
+    
+    return params;
+  }
+
 };
 
 } // namespace towr

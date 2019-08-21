@@ -95,6 +95,7 @@ BaseState TowrRosInterface::GetInitialStateCoM()
 }
 
 void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & msg){
+  
   initialBaseState.ang.at(kPos)(0) = msg.actual.base[0].position;
   initialBaseState.ang.at(kPos)(1) = msg.actual.base[1].position;
   initialBaseState.ang.at(kPos)(2) = msg.actual.base[2].position;
@@ -156,7 +157,7 @@ void
 TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
 {
   // robot model
-  //formulation_.model_ = RobotModel(RobotModel::Hyq);
+  formulation_.model_ = RobotModel(RobotModel::Hyq);
   auto robot_params_msg = BuildRobotParametersMsg(formulation_.model_);
   robot_parameters_pub_.publish(robot_params_msg);
 
@@ -164,11 +165,11 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   //auto terrain_id = static_cast<HeightMap::TerrainID>(msg.terrain);
   //formulation_.terrain_ = HeightMap::MakeTerrain(terrain_id);
 
-  //int n_ee = formulation_.model_.kinematic_model_->GetNumberOfEndeffectors();
-  //formulation_.params_ = GetTowrParameters(n_ee, msg);
-  //formulation_.final_base_ = GetGoalState(msg);
+ int n_ee = formulation_.model_.kinematic_model_->GetNumberOfEndeffectors();
+ formulation_.params_ = GetTowrParametersReplanningCallback(n_ee, time_);
+ 
 
-  //formulation_.initial_base_ = GetInitialState();
+  
 
   
   std::vector<Eigen::Vector3d> initial_feet_pos;
@@ -176,31 +177,23 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   initial_feet_pos.push_back(initial_foot_rf_W);
   initial_feet_pos.push_back(initial_foot_lh_W);
   initial_feet_pos.push_back(initial_foot_rh_W);
-  std::cout<<"initial foot pos LF "<<initial_foot_lf_W.transpose()<<std::endl;
-  std::cout<<"initial foot pos RF "<<initial_foot_rf_W.transpose()<<std::endl;
-  std::cout<<"initial foot pos LH "<<initial_foot_lh_W.transpose()<<std::endl;
-  std::cout<<"initial foot pos RH "<<initial_foot_rh_W.transpose()<<std::endl;
+  std::cout<<"initial foot pos LF in B"<<initial_foot_lf_B.transpose()<<std::endl;
+  std::cout<<"initial foot pos RF in B"<<initial_foot_rf_B.transpose()<<std::endl;
+  std::cout<<"initial foot pos LH in B"<<initial_foot_lh_B.transpose()<<std::endl;
+  std::cout<<"initial foot pos RH in B"<<initial_foot_rh_B.transpose()<<std::endl;
 
-  std::cout<<"initial base pos"<<formulation_.initial_base_.lin.at(kPos)<<std::endl;
-
- 
+  SetTowrInitialState(initial_feet_pos); 
+  
   
   formulation_.initial_base_.lin.at(kPos)=initialCoMState.lin.at(kPos);
   formulation_.initial_base_.lin.at(kVel)=initialBaseState.lin.at(kVel);
   formulation_.initial_base_.ang.at(kPos)=initialBaseState.ang.at(kPos);
   formulation_.initial_base_.ang.at(kVel)=initialBaseState.ang.at(kVel);
 
-  formulation_.initial_ee_W_.at(0)=initial_foot_lf_W;
-  formulation_.initial_ee_W_.at(1)=initial_foot_rf_W;
-  formulation_.initial_ee_W_.at(2)=initial_foot_lh_W;
-  formulation_.initial_ee_W_.at(3)=initial_foot_rh_W;
-
-  //formulation_.initial_ee_W_.at(0)<<0.31, 0.29,0;
-  //formulation_.initial_ee_W_.at(1)<<0.31, -0.29,0;
-  //formulation_.initial_ee_W_.at(2)<<-0.31, 0.29,0;
-  //formulation_.initial_ee_W_.at(3)<<-0.31, -0.29,0;
-  SetTowrInitialState(initial_feet_pos); 
-
+  //formulation_.initial_ee_W_.at(0)=initial_foot_lf_W;
+  //formulation_.initial_ee_W_.at(1)=initial_foot_rf_W;
+  //formulation_.initial_ee_W_.at(2)=initial_foot_lh_W;
+  //formulation_.initial_ee_W_.at(3)=initial_foot_rh_W;
 
   // visualization
   PublishInitialState();
@@ -288,7 +281,7 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
   int n_ee = formulation_.model_.kinematic_model_->GetNumberOfEndeffectors();
   formulation_.params_ = GetTowrParameters(n_ee, msg);
   formulation_.final_base_ = GetGoalState(msg);
-
+  time_=msg.total_duration;
   SetTowrDefaultState();
 
 
@@ -548,6 +541,8 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
         contact.wrench.force.y=0;
         contact.wrench.force.z=0;
       }
+      //if (i=0)
+      //{std::cout<<footPosDesCoM.transpose()<<std::endl;}
     planned_wbs_msg.contacts.push_back(contact);
     }
 
@@ -593,6 +588,7 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
 
       }
       planned_wbs_msg.base.push_back(base_state);
+
     }
     planned_wt.trajectory.push_back(planned_wbs_msg);}
     //double t = 0.0;

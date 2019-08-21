@@ -87,6 +87,7 @@ protected:
    * set of constraints and variables.
    */
   virtual Parameters GetTowrParameters(int n_ee, const TowrCommandMsg& msg) const = 0;
+  virtual Parameters GetTowrParametersReplanningCallback(int n_ee, double time) const = 0;
 
   /**
    * @brief Sets the parameters of the nonlinear programming solver IPOPT.
@@ -96,7 +97,7 @@ protected:
 
   NlpFormulation formulation_;         ///< the default formulation, can be adapted
   ifopt::IpoptSolver::Ptr solver_; ///< NLP solver, could also use SNOPT.
-
+  double time_;
 private:
   SplineHolder solution; ///< the solution splines linked to the opt-variables.
   ifopt::Problem nlp_;   ///< the actual nonlinear program to be solved.
