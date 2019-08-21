@@ -74,11 +74,14 @@ RangeOfMotionConstraint::UpdateBoundsAtInstance (double t, int k, VecBound& boun
   for (int dim=0; dim<k3D; ++dim) {
     ifopt::Bounds b;
     b += nominal_ee_pos_B_(dim);
-      if (dim==2)
+  if (dim==2){
     b.upper_ +=0.04;
-  else 
+  }
+  else{
     b.upper_ += max_deviation_from_nominal_(dim);
-    b.lower_ -= max_deviation_from_nominal_(dim);
+  }
+  
+  b.lower_ -= max_deviation_from_nominal_(dim);
      
  
     bounds.at(GetRow(k,dim)) = b;
