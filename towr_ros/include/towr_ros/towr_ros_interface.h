@@ -98,6 +98,10 @@ protected:
   NlpFormulation formulation_;         ///< the default formulation, can be adapted
   ifopt::IpoptSolver::Ptr solver_; ///< NLP solver, could also use SNOPT.
   double time_;
+  double foot_radius_=0.02;
+  Vector3d offsetBF;
+  //offsetBF<<0.0229786, 5.2e-5, -0.0397;
+
 private:
   SplineHolder solution; ///< the solution splines linked to the opt-variables.
   ifopt::Problem nlp_;   ///< the actual nonlinear program to be solved.
@@ -146,6 +150,7 @@ private:
                                const std::string& topic) const;
 
   dwl_msgs::WholeBodyTrajectory ToRos();
+
 };
 
 } /* namespace towr */

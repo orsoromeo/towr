@@ -71,6 +71,7 @@ TowrRosInterface::TowrRosInterface ()
   solver_ = std::make_shared<ifopt::IpoptSolver>();
 
   visualization_dt_ = 0.01;
+  offsetBF<<0.0229786, 5.2e-5, -0.0397;
 }
 
 BaseState
@@ -135,7 +136,7 @@ void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & 
   the DLS framework's state estimator */
   double average_foot_height = (initial_foot_lf_B(2) + initial_foot_rf_B(2) + initial_foot_lh_B(2) + initial_foot_rh_B(2))/4.0;
   double robot_height = - average_foot_height;
-  initialBaseState.lin.at(kPos)(2) = robot_height;
+  initialBaseState.lin.at(kPos)(2) = robot_height;//+foot_radius_;
 
   //std::cout<<"Average foot height is : "<<average_foot_height<<std::endl;
   //std::cout<<"Average robot's height is: "<<robot_height<<std::endl;
@@ -145,11 +146,10 @@ void TowrRosInterface::ReplanningCallback(const dwl_msgs::WholeBodyController & 
 
   //const EulerAngles euler_angles = initialBaseState.ang.at(kPos);
   auto base_angular=EulerConverter(solution.base_angular_);
-  Vector3d offset;
-  Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(initialBaseState.ang.at(kPos));
-  offset<<0.0229786, 5.2e-5, -0.0397;
-  initialCoMState.lin.at(kPos) = initialBaseState.lin.at(kPos)+ w_R_b*offset;
 
+  Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(initialBaseState.ang.at(kPos));
+  initialCoMState.lin.at(kPos) = initialBaseState.lin.at(kPos)+ w_R_b*offsetBF;
+  
 
   initial_foot_lf_W = w_R_b*initial_foot_lf_B + initialBaseState.lin.at(kPos);
   initial_foot_rf_W = w_R_b*initial_foot_rf_B + initialBaseState.lin.at(kPos);
@@ -194,7 +194,10 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   std::cout<<"initial foot pos RH WF: "<<initial_foot_rh_W.transpose()<<std::endl;
 
   SetTowrInitialState(initial_feet_pos); 
-  
+  std::cout<<"initial foot pos LF BF: "<<initial_foot_lf_B.transpose()<<std::endl;
+  std::cout<<"initial foot pos RF BF: "<<initial_foot_rf_B.transpose()<<std::endl;
+  std::cout<<"initial foot pos LH BF: "<<initial_foot_lh_B.transpose()<<std::endl;
+  std::cout<<"initial foot pos RH BF: "<<initial_foot_rh_B.transpose()<<std::endl;
   
   formulation_.initial_base_.lin.at(kPos)=initialCoMState.lin.at(kPos);
   formulation_.initial_base_.lin.at(kVel)=initialBaseState.lin.at(kVel);
@@ -530,9 +533,10 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
       contact.velocity.y = footVelDesCoM(1);
       contact.velocity.z = footVelDesCoM(2);
 
-      contact.acceleration.x = solution.ee_motion_.at(ee)->GetPoint(t).a().x();
-      contact.acceleration.y = solution.ee_motion_.at(ee)->GetPoint(t).a().y();
-      contact.acceleration.z = solution.ee_motion_.at(ee)->GetPoint(t).a().z();
+      Eigen::Vector3d footAccDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).a() - solution.base_linear_->GetPoint(t).a());
+      contact.acceleration.x = footAccDesCoM(0);
+      contact.acceleration.y = footAccDesCoM(0);
+      contact.acceleration.z = footAccDesCoM(0);
       switch(ee)
       {
        case 0: contact.name = "01_lf_foot"; break;
@@ -578,7 +582,17 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
       }
       planned_wbs_msg.base.push_back(base_state);
     }
-    auto pos_lin=solution.base_linear_->GetPoint(t).p();
+    Eigen::Vector3d pos_lin=solution.base_linear_->GetPoint(t).p()-solution.base_linear_->GetPoint(0.0).p();
+    //std::cout << "t=" << t << "\n";
+    //std::cout<<solution.base_linear_->GetPoint(t).p()<<std::endl;
+    //std::cout<<" "<<std::endl;
+    //std::cout<<solution.base_linear_->GetPoint(0).p()<<std::endl;
+    //std::cout<<" "<<std::endl;
+    //std::cout<<"sottrazione "<<std::endl;
+    //std::cout<<solution.base_linear_->GetPoint(t).p()-solution.base_linear_->GetPoint(0).p()<<std::endl;
+    //std::cout<<"pos_lin"<<std::endl;
+    //std::cout<<pos_lin<<std::endl;
+
     auto vel_lin=solution.base_linear_->GetPoint(t).v();;
     auto acc_lin=solution.base_linear_->GetPoint(t).a();
     for(int base=0; base<3; base++)
@@ -594,30 +608,38 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
        case 1: base_state.id = base_state.LY; break;
        case 2: {
                 base_state.id = base_state.LZ;
-                base_state.position += 0.02;
+                //base_state.position += foot_radius_;
                 break;}
-
       }
       planned_wbs_msg.base.push_back(base_state);
 
     }
     planned_wt.trajectory.push_back(planned_wbs_msg);}
     //double t = 0.0;
-    //        while (t<=solution.base_linear_->GetTotalTime() + 1e-5) {
-    //        std::cout << "t=" << t << "\n";
-    //        std::cout << "LF ee_motion position x,y,z:   \t";
-    //        std::cout << solution.ee_motion_.at(0)->GetPoint(t).p().transpose() << "\t[m]" << std::endl;
-    //            Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(t);
+    //        while (t<=solution.base_linear_->GetTotalTime() + 1e-5)
+    //         {
+    //          std::cout << "t=" << t << "\n";
+    //          std::cout<<solution.base_linear_->GetPoint(t).p()<<std::endl;
+    //          std::cout<<" "<<std::endl;
+    //          std::cout<<solution.base_linear_->GetPoint(0).p()<<std::endl;//
+    //          std::cout << "LF ee_motion position x,y,z:   \t";
+    //          //std::cout << solution.ee_motion_.at(0)->GetPoint(t).p().transpose() << "\t[m]" << std::endl;
+    //          //Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(t);
+    //          //Eigen::Vector3d basePosWF = solution.base_linear_->GetPoint(t).p()-w_R_b*offsetBF;
+    //          //Eigen::Vector3d footPosDesBase = w_R_b.transpose()*(solution.ee_motion_.at(0)->GetPoint(t).p() - basePosWF);
+    //          //std::cout << "LF ee_motion position x,y,z in base frame:   \t";
+    //          //std::cout << footPosDesBase << "\t[m]" << std::endl;
+    //          //std::cout <<"foot pos LF wf "<< solution.ee_motion_.at(0)->GetPoint(t).p() << std::endl;
+    //          //std::cout << solution.ee_motion_.at(0)->GetPoint(t).p().transpose() << "\t[m]" << std::endl;
+    //          t += 0.1;
+    //}
 
-    //        Vector3d offset;
-    //  offset<<0.0229786, 5.2e-5, -0.0397;
-    //  Eigen::Vector3d footPosDesBase = w_R_b.transpose()*(solution.ee_motion_.at(0)->GetPoint(t).p()- (solution.base_linear_->GetPoint(t).p()-w_R_b*offset));
-    //  std::cout << "LF ee_motion position x,y,z in base frame:   \t";
-    //        std::cout << footPosDesBase.transpose() << "\t[m]" << std::endl;
-    //      t += 0.1;}
-    //std::cout<<"i am here2"<<std::endl;
+
+    ////std::cout<<"i am here2"<<std::endl;
     return planned_wt;
-  }
+  
+}
+
   void
 TowrRosInterface::SaveOptimizationAsRosbag (const std::string& bag_name,
                                    const xpp_msgs::RobotParameters& robot_params,
