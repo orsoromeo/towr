@@ -223,11 +223,13 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   // solver parameters
   //SetIpoptParameters(msg);
   
-  //time_t ct;
-  //ct = &time(NULL);
-  //std::cout << ctime(&ct);
-  //std::string bag_file = "towr_trajectory" + ctime(&ct)+ ".bag";
-  std::string bag_file = "towr_trajectory.bag";
+  time_t ct;
+  ct = time(NULL);
+  struct tm *localTime = localtime(&ct);
+  char buffer [80];
+  strftime(buffer, 80, "%d-%m-%Y-%H-%M-%S", localTime);
+  std::string bag_file = "towr_trajectory-" + std::string(buffer)+ ".bag";
+  //std::string bag_file = "towr_trajectory.bag";
   //if (msg.optimize || msg.play_initialization) {
     nlp_ = ifopt::Problem();
     for (auto c : formulation_.GetVariableSets(solution))
@@ -276,7 +278,8 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
     }
   }
 
-  //}
+  int success1 = system (("mv " + bag_file + " ~/misc_ws/src/bag_files").c_str()); //mio computer
+  // int success1 = system (("mv"+ bag_file + " ~/catkin_ws/bag_files")c_str()); //hyq_furious 
   
 }
 
@@ -307,11 +310,13 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
   // solver parameters
   SetIpoptParameters(msg);
   
-  //time_t ct;
-  //ct = &time(NULL);
-  //std::cout << ctime(&ct);
-  //std::string bag_file = "towr_trajectory" + ctime(&ct)+ ".bag";
-  std::string bag_file = "towr_trajectory.bag";
+  time_t ct;
+  ct = time(NULL);
+  struct tm *localTime = localtime(&ct);
+  char buffer [80];
+  strftime(buffer, 80, "%d-%m-%Y-%H-%M-%S", localTime);
+  std::string bag_file = "towr_trajectory-" + std::string(buffer)+ ".bag";
+  //std::string bag_file = "towr_trajectory.bag";
   if (msg.optimize || msg.play_initialization) {
     nlp_ = ifopt::Problem();
     for (auto c : formulation_.GetVariableSets(solution))
@@ -359,6 +364,8 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
       }
     }
   }
+  int success1 = system (("mv " + bag_file + " ~/misc_ws/src/bag_files").c_str()); //mio computer
+  // int success1 = system (("mv"+ bag_file + " ~/catkin_ws/bag_files")c_str()); //hyq_furious 
 }
 
 void
