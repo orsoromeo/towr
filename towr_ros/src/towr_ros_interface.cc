@@ -527,23 +527,22 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
     {
       dwl_msgs::ContactState contact;
       Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(t);
-      Eigen::Vector3d footPosDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).p()-solution.base_linear_->GetPoint(t).p());
-      contact.position.x = footPosDesCoM(0);
-      contact.position.y = footPosDesCoM(1);
-      contact.position.z = footPosDesCoM(2); 
-      Eigen::Vector3d footVelDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).v() - solution.base_linear_->GetPoint(t).v());
-     
+      //Eigen::Vector3d footPosDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).p()-solution.base_linear_->GetPoint(t).p());
+      Eigen::Vector3d footPosDesWF = solution.ee_motion_.at(ee)->GetPoint(t).p();
+      contact.position.x = footPosDesWF(0);
+      contact.position.y = footPosDesWF(1);
+      contact.position.z = footPosDesWF(2); 
+      //Eigen::Vector3d footVelDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).v() - solution.base_linear_->GetPoint(t).v());
+      Eigen::Vector3d footVelDesWF = solution.ee_motion_.at(ee)->GetPoint(t).v();
+      contact.velocity.x = footVelDesWF(0);
+      contact.velocity.y = footVelDesWF(1);
+      contact.velocity.z = footVelDesWF(2);
 
-
-
-      contact.velocity.x = footVelDesCoM(0);
-      contact.velocity.y = footVelDesCoM(1);
-      contact.velocity.z = footVelDesCoM(2);
-
-      Eigen::Vector3d footAccDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).a() - solution.base_linear_->GetPoint(t).a());
-      contact.acceleration.x = footAccDesCoM(0);
-      contact.acceleration.y = footAccDesCoM(0);
-      contact.acceleration.z = footAccDesCoM(0);
+      //Eigen::Vector3d footAccDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).a() - solution.base_linear_->GetPoint(t).a());
+      Eigen::Vector3d footAccDesWF = solution.ee_motion_.at(ee)->GetPoint(t).a();
+      contact.acceleration.x = footAccDesWF(0);
+      contact.acceleration.y = footAccDesWF(0);
+      contact.acceleration.z = footAccDesWF(0);
       switch(ee)
       {
        case 0: contact.name = "01_lf_foot"; break;
