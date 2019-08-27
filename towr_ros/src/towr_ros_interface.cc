@@ -531,7 +531,7 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
       Eigen::Vector3d footPosDesWF = solution.ee_motion_.at(ee)->GetPoint(t).p();
       contact.position.x = footPosDesWF(0);
       contact.position.y = footPosDesWF(1);
-      contact.position.z = footPosDesWF(2); 
+      contact.position.z = footPosDesWF(2)+0.02; 
       //Eigen::Vector3d footVelDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).v() - solution.base_linear_->GetPoint(t).v());
       Eigen::Vector3d footVelDesWF = solution.ee_motion_.at(ee)->GetPoint(t).v();
       contact.velocity.x = footVelDesWF(0);

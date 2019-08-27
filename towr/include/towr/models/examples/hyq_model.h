@@ -43,8 +43,8 @@ class HyqKinematicModel : public KinematicModel {
 public:
   HyqKinematicModel () : KinematicModel(4)
   {
-    const double x_nominal_b = 0.31;
-    const double y_nominal_b = 0.29;
+    const double x_nominal_b = 0.36743;
+    const double y_nominal_b = 0.3272;
     const double z_nominal_b = -0.55;
 
     nominal_stance_.at(LF) <<  x_nominal_b,   y_nominal_b, z_nominal_b;
@@ -52,7 +52,7 @@ public:
     nominal_stance_.at(LH) << -x_nominal_b,   y_nominal_b, z_nominal_b;
     nominal_stance_.at(RH) << -x_nominal_b,  -y_nominal_b, z_nominal_b;
 
-    max_dev_from_nominal_ << 0.25, 0.20, 0.06;
+    max_dev_from_nominal_ << 0.25, 0.10, 0.06;
   }
 };
 
