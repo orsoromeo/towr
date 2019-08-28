@@ -236,7 +236,7 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
       nlp_.AddVariableSet(c);
     for (auto c : formulation_.GetConstraints(solution,nlp_))
       nlp_.AddConstraintSet(c);
-    for (auto c : formulation_.GetCosts())
+    for (auto c : formulation_.GetCosts(solution))
       nlp_.AddCostSet(c);
 
     solver_->Solve(nlp_);
@@ -323,7 +323,7 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
       nlp_.AddVariableSet(c);
     for (auto c : formulation_.GetConstraints(solution,nlp_))
       nlp_.AddConstraintSet(c);
-    for (auto c : formulation_.GetCosts())
+    for (auto c : formulation_.GetCosts(solution))
       nlp_.AddCostSet(c);
 
     solver_->Solve(nlp_);
@@ -518,7 +518,7 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
   //planned_wt.resize(solution.base_linear_->GetTotalTime()/0.04);
   auto base_angular=EulerConverter(solution.base_angular_);
 
-  for(int i=0; i<solution.base_linear_->GetTotalTime()/0.004; i++)
+  for(int i=0; i<solution.base_linear_->GetTotalTime()/0.004 + 1e-6; i++)
   {
 
     double t=i*0.004;

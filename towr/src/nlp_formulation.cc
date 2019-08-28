@@ -44,6 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr/constraints/base_acc_constraint_range_ang.h>
 
 #include <towr/costs/node_cost.h>
+#include <towr/costs/base_cost.h>
 #include <towr/variables/nodes_variables_all.h>
 #include <towr/variables/nodes_variables_lambda.h>
 
@@ -400,47 +401,51 @@ NlpFormulation::MakeBaseAccConstraintValueAng (const SplineHolder& s) const
       return constraints;
 }
 NlpFormulation::ContraintPtrVec
-NlpFormulation::GetCosts() const
+NlpFormulation::GetCosts(const SplineHolder& spline_holder) const
 {
   ContraintPtrVec costs;
-  std::cout<<params_.costs_.size()<<std::endl;
+  //std::cout<<params_.costs_.size()<<std::endl;
   for (const auto& pair : params_.costs_)
-   { std::cout<<pair.second<<std::endl;
-    for (auto c : GetCost(pair.first, pair.second))
-      costs.push_back(c);}
+   { 
+    for (auto c : GetCost(pair.first, pair.second, spline_holder))
+      costs.push_back(c);
+  }
   return costs;
 }
 
 NlpFormulation::CostPtrVec
-NlpFormulation::GetCost(const Parameters::CostName& name, double weight) const
-{std::cout<<"a"<<std::endl;
+NlpFormulation::GetCost(const Parameters::CostName& name, double weight, const SplineHolder& spline_holder) const
+{
   switch (name) {
-    case Parameters::ForcesCostID:   return MakeForcesCost(weight);
-    case Parameters::EEMotionCostID: return MakeEEMotionCost(weight);
+    case Parameters::BaseLinAccCostID:   return MakeBaseLinAccCost(weight,spline_holder);
+    case Parameters::BaseAngAccCostID:   return MakeBaseAngAccCost(weight);
     default: throw std::runtime_error("cost not defined!");
   }
 }
 
 NlpFormulation::CostPtrVec
-NlpFormulation::MakeForcesCost(double weight) const
+NlpFormulation::MakeBaseLinAccCost(double weight,const SplineHolder& spline_holder) const
 {
   CostPtrVec cost;
 
-  for (int ee=0; ee<params_.GetEECount(); ee++)
-    cost.push_back(std::make_shared<NodeCost>(id::EEForceNodes(ee), kPos, Z, weight));
+  //for (int ee=0; ee<params_.GetEECount(); ee++)
+    cost.push_back(std::make_shared<BaseCost>("BaseLinVel", kVel, Y, weight, spline_holder));
+    //cost.push_back(std::make_shared<NodeCost>("BaseLinVel", kVel, Y, weight));
+    //cost.push_back(std::make_shared<NodeCost>("BaseLinVel", kVel, Z, weight));
+
+
 
   return cost;
 }
 
 NlpFormulation::CostPtrVec
-NlpFormulation::MakeEEMotionCost(double weight) const
+NlpFormulation::MakeBaseAngAccCost(double weight) const
 {
   CostPtrVec cost;
 
-  for (int ee=0; ee<params_.GetEECount(); ee++) {
-    cost.push_back(std::make_shared<NodeCost>(id::EEMotionNodes(ee), kVel, X, weight));
-    cost.push_back(std::make_shared<NodeCost>(id::EEMotionNodes(ee), kVel, Y, weight));
-  }
+  cost.push_back(std::make_shared<NodeCost>("BaseAngVel", kVel, X, weight));
+  cost.push_back(std::make_shared<NodeCost>("BaseAngVel", kVel, Y, weight));
+  cost.push_back(std::make_shared<NodeCost>("BaseAngVel", kVel, Z, weight));
 
   return cost;
 }

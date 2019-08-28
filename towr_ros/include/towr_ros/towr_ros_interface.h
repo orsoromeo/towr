@@ -100,7 +100,7 @@ protected:
   double time_;
   double foot_radius_=0.02;
   Vector3d offsetBF;
-  //offsetBF<<0.0229786, 5.2e-5, -0.0397;
+  
 
 private:
   SplineHolder solution; ///< the solution splines linked to the opt-variables.

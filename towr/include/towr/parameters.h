@@ -151,8 +151,8 @@ public:
    *  @brief Indentifiers to be used to add certain costs to the optimization
    *  problem.
    */
-  enum CostName       { ForcesCostID,    ///< sets NodeCost on force nodes
-                        EEMotionCostID   ///< sets NodeCost on endeffector velocity
+  enum CostName       { BaseLinAccCostID,    ///< sets NodeCost on force nodes
+                        BaseAngAccCostID   ///< sets NodeCost on endeffector velocity
   };
 
   using CostWeights      = std::vector<std::pair<CostName, double>>;

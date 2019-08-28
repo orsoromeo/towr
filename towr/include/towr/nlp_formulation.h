@@ -94,7 +94,7 @@ public:
   ContraintPtrVec GetConstraints(const SplineHolder& spline_holder, ifopt::Problem) const;
 
   /** @brief The ifopt costs to tune the motion. */
-  ContraintPtrVec GetCosts() const;
+  ContraintPtrVec GetCosts(const SplineHolder& spline_holder) const;
 
 
   BaseState initial_base_;
@@ -126,9 +126,9 @@ private:
   ContraintPtrVec MakeBaseAccConstraintValueAng(const SplineHolder& s) const;
 
   // costs
-  CostPtrVec GetCost(const Parameters::CostName& id, double weight) const;
-  CostPtrVec MakeForcesCost(double weight) const;
-  CostPtrVec MakeEEMotionCost(double weight) const;
+  CostPtrVec GetCost(const Parameters::CostName& id, double weight, const SplineHolder& spline_holder) const;
+  CostPtrVec MakeBaseLinAccCost(double weight,const SplineHolder& spline_holder) const;
+  CostPtrVec MakeBaseAngAccCost(double weight) const;
 };
 
 } /* namespace towr */
