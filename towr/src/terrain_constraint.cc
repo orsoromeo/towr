@@ -78,9 +78,9 @@ TerrainConstraint::GetBounds () const
   int row = 0;
   for (int id : node_ids_) {
     if (ee_motion_->IsConstantNode(id))
-      bounds.at(row) = ifopt::BoundZero;
+      bounds.at(row) = ifopt::ZeroBound;
     else
-      bounds.at(row) = ifopt::Bounds(0.07, max_distance_above_terrain);
+      bounds.at(row) = ifopt::Bounds(0.05, max_distance_above_terrain);
     row++;
   }
 

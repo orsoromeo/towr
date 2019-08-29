@@ -160,8 +160,8 @@ TEST(TOWR, singleHopExampleTest){
           for (auto l:constraints)
             nlp.AddConstraintSet(l);
 
-          for (auto c : formulation.GetCosts())
-          nlp.AddCostSet(c);
+          //for (auto c : formulation.GetCosts())
+          //nlp.AddCostSet(c);
 
           auto solver = std::make_shared<ifopt::IpoptSolver>();
 

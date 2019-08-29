@@ -33,6 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr/variables/spline.h>
 #include <towr/variables/spline_holder.h>
 #include <towr/variables/euler_converter.h>
+#include <towr/terrain/height_map.h>
+#include <towr/variables/spline.h>
 
 #include <towr/models/kinematic_model.h>
 
@@ -68,23 +70,26 @@ public:
   RangeOfMotionConstraint(const KinematicModel::Ptr& robot_model,
                           double T, double dt,
                           const EE& ee,
-                          const SplineHolder& spline_holder);
+                          const SplineHolder& spline_holder,
+                          const HeightMap::Ptr& terrain);
   virtual ~RangeOfMotionConstraint() = default;
 
 private:
   NodeSpline::Ptr base_linear_;     ///< the linear position of the base.
   EulerConverter base_angular_; ///< the orientation of the base.
   NodeSpline::Ptr ee_motion_;       ///< the linear position of the endeffectors.
-
+  HeightMap::Ptr terrain_;
   Eigen::Vector3d max_deviation_from_nominal_;
   Eigen::Vector3d nominal_ee_pos_B_;
   EE ee_;
-
+  double slope_;
+  double distance_;
+  double HeightToCheck_;
   // see TimeDiscretizationConstraint for documentation
   void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
   void UpdateBoundsAtInstance (double t, int k, VecBound&) const override;
   void UpdateJacobianAtInstance(double t, int k, std::string, Jacobian&) const override;
-
+  NodeSpline::Jacobian GetDerivativeHeightWrtNodes (double jac_cols, double t, double posx, double posy) const;
   int GetRow(int node, int dimension) const;
 };
 

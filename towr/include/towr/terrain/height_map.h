@@ -131,7 +131,8 @@ public:
    * @returns The constant friction coefficient over the whole terrain.
    */
   double GetFrictionCoeff() const { return friction_coeff_; };
-
+  virtual double GetHeightDerivWrtX(double x, double y) const { return 0.0; };
+  virtual double GetHeightDerivWrtY(double x, double y) const { return 0.0; };
 protected:
   double friction_coeff_ = 0.5;
 
@@ -160,8 +161,7 @@ private:
       const Vector3d& non_normalized, int index) const;
 
   // first derivatives that must be implemented by the user
-  virtual double GetHeightDerivWrtX(double x, double y) const { return 0.0; };
-  virtual double GetHeightDerivWrtY(double x, double y) const { return 0.0; };
+  
 
   // second derivatives with respect to first letter, then second
   virtual double GetHeightDerivWrtXX(double x, double y) const { return 0.0; };

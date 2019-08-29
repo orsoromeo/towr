@@ -35,9 +35,11 @@ namespace towr {
 RangeOfMotionConstraint::RangeOfMotionConstraint (const KinematicModel::Ptr& model,
                                                   double T, double dt,
                                                   const EE& ee,
-                                                  const SplineHolder& spline_holder)
+                                                  const SplineHolder& spline_holder,
+                                                  const HeightMap::Ptr& terrain)
     :TimeDiscretizationConstraint(T, dt, "rangeofmotion-" + std::to_string(ee))
 {
+
   base_linear_  = spline_holder.base_linear_;
   base_angular_ = EulerConverter(spline_holder.base_angular_);
   ee_motion_    = spline_holder.ee_motion_.at(ee);
@@ -45,14 +47,19 @@ RangeOfMotionConstraint::RangeOfMotionConstraint (const KinematicModel::Ptr& mod
   max_deviation_from_nominal_ = model->GetMaximumDeviationFromNominal();
   nominal_ee_pos_B_           = model->GetNominalStanceInBase().at(ee);
   ee_ = ee;
-
-  SetRows(GetNumberOfNodes()*k3D);
+  terrain_ = terrain;
+  slope_=1;
+  distance_=0.12;
+  HeightToCheck_= slope_*distance_;
+  //SetRows(GetNumberOfNodes()*k3D);
+  SetRows(GetNumberOfNodes()*4);
 }
 
 int
 RangeOfMotionConstraint::GetRow (int node, int dim) const
 {
-  return node*k3D + dim;
+  return node*4 + dim;
+  //return node*k3D + dim;
 }
 
 void
@@ -66,6 +73,19 @@ RangeOfMotionConstraint::UpdateConstraintAtInstance (double t, int k, VectorXd& 
   Vector3d vector_base_to_ee_B = b_R_w*(vector_base_to_ee_W);
 
   g.middleRows(GetRow(k, X), k3D) = vector_base_to_ee_B;
+  int a=GetRow(k,3);
+  if (ee_<2) //quando scende deve essere cambiato
+  {  
+    g.coeffRef(a,0) = pos_ee_W(2) + HeightToCheck_ - terrain_->GetHeight(pos_ee_W(0)+distance_, pos_ee_W(1));
+  }
+  else
+  {
+    g.coeffRef(a,0) = pos_ee_W(2) + HeightToCheck_ - terrain_->GetHeight(pos_ee_W(0)+distance_, pos_ee_W(1));
+  }
+  std::cout<<"constraint "<<ee_<<" "<<t<<"  "<<std::endl;
+  std::cout<<"foot pos "<<pos_ee_W(2)-terrain_->GetHeight(pos_ee_W(0),pos_ee_W(1))<<std::endl;
+  //std::cout<<"constraint "<<ee_<<" "<<t<<"  "<<g.coeffRef(a,0)<<std::endl;
+
 }
 
 void
@@ -86,6 +106,8 @@ RangeOfMotionConstraint::UpdateBoundsAtInstance (double t, int k, VecBound& boun
  
     bounds.at(GetRow(k,dim)) = b;
   }
+   bounds.at(GetRow(k,3)) = ifopt::Bounds (0.02, 100);
+  //bounds.at(GetRow(k,3)) = ifopt::Bounds (0.0, 100);
 }
 
 void
@@ -93,6 +115,7 @@ RangeOfMotionConstraint::UpdateJacobianAtInstance (double t, int k,
                                                    std::string var_set,
                                                    Jacobian& jac) const
 {
+  //double n_cols=jac.cols();
   EulerConverter::MatrixSXd b_R_w = base_angular_.GetRotationMatrixBaseToWorld(t).transpose();
   int row_start = GetRow(k,X);
 
@@ -109,12 +132,51 @@ RangeOfMotionConstraint::UpdateJacobianAtInstance (double t, int k,
 
   if (var_set == id::EEMotionNodes(ee_)) {
     jac.middleRows(row_start, k3D) = b_R_w*ee_motion_->GetJacobianWrtNodes(t,kPos);
+    Vector3d pos_ee_W = ee_motion_->GetPoint(t).p();
+    if (ee_<2)
+    {
+     jac.middleRows(GetRow(k,3),0) =ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)  - GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+distance_,pos_ee_W(1));
+    }
+    else 
+    {
+     jac.middleRows(GetRow(k,3),0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+distance_,pos_ee_W(1));
+    }
+    //std::cout<<"Jacobian "<<jac.middleRows(row_start,4)<<std::endl;
   }
 
   if (var_set == id::EESchedule(ee_)) {
     jac.middleRows(row_start, k3D) = b_R_w*ee_motion_->GetJacobianOfPosWrtDurations(t);
   }
 }
+
+NodeSpline::Jacobian
+RangeOfMotionConstraint::GetDerivativeHeightWrtNodes (double jac_cols, double t,double posx, double posy) const
+{
+  Jacobian jac1;
+  jac1.resize(1, jac_cols);
+
+  Jacobian DerPosWrtNodes=ee_motion_->GetJacobianWrtNodes(t,kPos);
+  auto JacWrtNodesX= DerPosWrtNodes.row(0);
+  auto JacWrtNodesY= DerPosWrtNodes.row(1);
+  //
+  double DerHeightWrtPosX;
+  double DerHeightWrtPosY;
+  
+  DerHeightWrtPosX= terrain_->GetHeightDerivWrtX(posx,posy);
+  DerHeightWrtPosY= terrain_->GetHeightDerivWrtY(posx,posy);
+  
+
+  jac1= DerHeightWrtPosX*JacWrtNodesX + DerHeightWrtPosY * JacWrtNodesY;
+  //std::cout<<"time "<<t<<std::endl;
+  //std::cout<<JacWrtNodesX<<std::endl;
+  //std::cout<<JacWrtNodesY<<std::endl;
+  //std::cout<<"  "<<std::endl;
+  //std::cout<<"  "<<std::endl;
+
+  return jac1;
+}
+
+
 
 } /* namespace xpp */
 

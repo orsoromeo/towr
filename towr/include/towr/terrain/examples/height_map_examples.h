@@ -47,7 +47,7 @@ class FlatGround : public HeightMap {
 public:
   FlatGround(double height = 0.0);
   double GetHeight(double x, double y)  const override {  return height_; };
-
+  double GetHeightDerivWrtX(double x, double y) const override {return 0;};
 private:
   double height_; // [m]
 };
@@ -63,7 +63,7 @@ public:
 private:
   double block_start = 0.7;
   double length_     = 3.5;
-  double height_     = 0.5; // [m]
+  double height_     = 0.15; // [m]
 
   double eps_ =0.001;
       //0.03; // approximate as slope

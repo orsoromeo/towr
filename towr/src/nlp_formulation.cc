@@ -286,7 +286,8 @@ NlpFormulation::MakeRangeOfMotionBoxConstraint (const SplineHolder& s) const
                                                          params_.GetTotalTime(),
                                                          params_.dt_constraint_range_of_motion_,
                                                          ee,
-                                                         s);
+                                                         s,
+                                                         terrain_);
     c.push_back(rom);
   }
 

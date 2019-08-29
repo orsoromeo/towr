@@ -328,6 +328,9 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
 
     solver_->Solve(nlp_);
     SaveOptimizationAsRosbag(bag_file, robot_params_msg, msg,false);
+        // int success1 = system (("mv"+ bag_file + " ~/catkin_ws/bag_files")c_str()); //hyq_furious 
+
+
   }
 
   // playback using terminal commands
@@ -350,6 +353,7 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
 
   trajectory_.publish(xpp_msg);
   if (msg.optimize){
+    int success1 = system (("mv " + bag_file + " ../misc_ws/src/bag_files").c_str()); //mio computer
     char a;
     std::cout<<"do you want to publish the trajectory? y/n"<<std::endl;
     std::cin>>a;
@@ -364,8 +368,6 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
       }
     }
   }
-  int success1 = system (("mv " + bag_file + " ~/misc_ws/src/bag_files").c_str()); //mio computer
-  // int success1 = system (("mv"+ bag_file + " ~/catkin_ws/bag_files")c_str()); //hyq_furious 
 }
 
 void
