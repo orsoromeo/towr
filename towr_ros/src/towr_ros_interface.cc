@@ -529,9 +529,9 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
       Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(t);
       //Eigen::Vector3d footPosDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).p()-solution.base_linear_->GetPoint(t).p());
       Eigen::Vector3d footPosDesWF = solution.ee_motion_.at(ee)->GetPoint(t).p();
-      contact.position.x = footPosDesWF(0);
-      contact.position.y = footPosDesWF(1);
-      contact.position.z = footPosDesWF(2)+0.02; 
+      contact.position.x = footPosDesWF(0) - solution.ee_motion_.at(ee)->GetPoint(0.0).p().x();
+      contact.position.y = footPosDesWF(1) - solution.ee_motion_.at(ee)->GetPoint(0.0).p().y();
+      contact.position.z = footPosDesWF(2) - solution.ee_motion_.at(ee)->GetPoint(0.0).p().z(); 
       //Eigen::Vector3d footVelDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).v() - solution.base_linear_->GetPoint(t).v());
       Eigen::Vector3d footVelDesWF = solution.ee_motion_.at(ee)->GetPoint(t).v();
       contact.velocity.x = footVelDesWF(0);
