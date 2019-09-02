@@ -49,9 +49,9 @@ RangeOfMotionConstraint::RangeOfMotionConstraint (const KinematicModel::Ptr& mod
   ee_ = ee;
   terrain_ = terrain;
   slope_=1;
-  distance_=0.12;
+  distance_=0.3;
   HeightToCheck_= slope_*distance_;
-  //SetRows(GetNumberOfNodes()*k3D);
+  SetRows(GetNumberOfNodes()*k3D);
   SetRows(GetNumberOfNodes()*4);
 }
 
@@ -76,14 +76,14 @@ RangeOfMotionConstraint::UpdateConstraintAtInstance (double t, int k, VectorXd& 
   int a=GetRow(k,3);
   if (ee_<2) //quando scende deve essere cambiato
   {  
-    g.coeffRef(a,0) = pos_ee_W(2) + HeightToCheck_ - terrain_->GetHeight(pos_ee_W(0)+distance_, pos_ee_W(1));
+    g.coeffRef(a,0)=1;
+    //g.coeffRef(a,0) = pos_ee_W(2) + HeightToCheck_ - terrain_->GetHeight(pos_ee_W(0)+distance_, pos_ee_W(1));
   }
   else
   {
     g.coeffRef(a,0) = pos_ee_W(2) + HeightToCheck_ - terrain_->GetHeight(pos_ee_W(0)+distance_, pos_ee_W(1));
   }
-  std::cout<<"constraint "<<ee_<<" "<<t<<"  "<<std::endl;
-  std::cout<<"foot pos "<<pos_ee_W(2)-terrain_->GetHeight(pos_ee_W(0),pos_ee_W(1))<<std::endl;
+  
   //std::cout<<"constraint "<<ee_<<" "<<t<<"  "<<g.coeffRef(a,0)<<std::endl;
 
 }
@@ -135,7 +135,7 @@ RangeOfMotionConstraint::UpdateJacobianAtInstance (double t, int k,
     Vector3d pos_ee_W = ee_motion_->GetPoint(t).p();
     if (ee_<2)
     {
-     jac.middleRows(GetRow(k,3),0) =ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)  - GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+distance_,pos_ee_W(1));
+     //jac.middleRows(GetRow(k,3),0) =ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)  - GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+distance_,pos_ee_W(1));
     }
     else 
     {

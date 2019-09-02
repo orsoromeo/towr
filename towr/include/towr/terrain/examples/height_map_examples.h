@@ -61,7 +61,7 @@ public:
   double GetHeightDerivWrtX(double x, double y) const override;
 
 private:
-  double block_start = 0.7;
+  double block_start = 0.6;
   double length_     = 3.5;
   double height_     = 0.15; // [m]
 
