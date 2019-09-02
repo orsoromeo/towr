@@ -29,11 +29,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef TOWR_CONSTRAINTS_FORCE_CONSTRAINT_H_
 #define TOWR_CONSTRAINTS_FORCE_CONSTRAINT_H_
+#include <towr/variables/spline.h>
 
 #include <ifopt/constraint_set.h>
-
+#include <towr/variables/node_spline.h>
+#include <towr/variables/euler_converter.h>
+#include <towr/variables/spline_holder.h>
 #include <towr/variables/nodes_variables_phase_based.h>
 #include <towr/terrain/height_map.h> // for friction cone
+#include <towr/models/kinematic_model.h>
 
 namespace towr {
 
@@ -63,9 +67,12 @@ public:
    * @param force_limit_in_normal_direction  Maximum pushing force [N].
    * @param endeffector_id Which endeffector force should be constrained.
    */
-  ForceConstraint (const HeightMap::Ptr& terrain,
+  ForceConstraint (const KinematicModel::Ptr& robot_model,
+                   const HeightMap::Ptr& terrain,
                    double force_limit_in_normal_direction,
-                   EE endeffector_id);
+                   EE endeffector_id,
+                  const SplineHolder& spline_holder
+                   );
   virtual ~ForceConstraint () = default;
 
   void InitVariableDependedQuantities(const VariablesPtr& x) override;
@@ -74,15 +81,22 @@ public:
   VecBound GetBounds() const override;
   void FillJacobianBlock (std::string var_set, Jacobian&) const override;
 
+
 private:
+    Eigen::Vector3d max_deviation_from_nominal_;
+  Eigen::Vector3d nominal_ee_pos_B_;
+  NodeSpline::Ptr base_linear_;     ///< the linear position of the base.
+  EulerConverter base_angular_;
   NodesVariablesPhaseBased::Ptr ee_force_;  ///< the current xyz foot forces.
   NodesVariablesPhaseBased::Ptr ee_motion_; ///< the current xyz foot positions.
-
+  std::vector<double> T_; ///< Duration of each polynomial in spline.
   HeightMap::Ptr terrain_; ///< gradient information at every position (x,y).
   double fn_max_;          ///< force limit in normal direction.
   double mu_;              ///< friction coeff between robot feet and terrain.
   int n_constraints_per_node_; ///< number of constraint for each node.
   EE ee_;                  ///< The endeffector force to be constrained.
+  NodeSpline::Ptr ee_force_node_;
+    NodeSpline::Ptr ee_motion_node_;
 
   /**
    * The are those Hermite-nodes that shape the polynomial during the
