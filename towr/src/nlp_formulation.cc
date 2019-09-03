@@ -326,7 +326,7 @@ NlpFormulation::ContraintPtrVec
 NlpFormulation::MakeForceConstraint (const SplineHolder& s) const
 {
   ContraintPtrVec constraints;
-
+  if (params_.GetEECount()>2) {
   for (int ee=0; ee<params_.GetEECount(); ee++) {
     auto c = std::make_shared<ForceConstraint>(model_.kinematic_model_,
                                                terrain_,
@@ -334,7 +334,7 @@ NlpFormulation::MakeForceConstraint (const SplineHolder& s) const
                                                ee, s);
     constraints.push_back(c);
   }
-
+  }
   return constraints;
 }
 

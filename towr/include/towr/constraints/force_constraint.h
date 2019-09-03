@@ -83,7 +83,11 @@ public:
 
 
 private:
-    Eigen::Vector3d max_deviation_from_nominal_;
+  Eigen::Vector2d coeff1_;
+  Eigen::Vector2d coeff2_;
+  double coeffj1_;
+  double coeffj2_;
+  Eigen::Vector3d max_deviation_from_nominal_;
   Eigen::Vector3d nominal_ee_pos_B_;
   NodeSpline::Ptr base_linear_;     ///< the linear position of the base.
   EulerConverter base_angular_;
@@ -97,6 +101,11 @@ private:
   EE ee_;                  ///< The endeffector force to be constrained.
   NodeSpline::Ptr ee_force_node_;
     NodeSpline::Ptr ee_motion_node_;
+    Eigen::Vector3d ComputeBasetoEEB (double time) const;
+  double ComputeBoundL (Eigen::Vector2d coeff, double Posx, double Pn,double ls) const;
+  double ComputeBoundR (Eigen::Vector2d coeff, double Posx, double Pn,double rs) const;
+  double ComputeCoeffForJacL (Eigen::Vector2d coeff, double Pn,double ls) const;
+  double ComputeCoeffForJacR (Eigen::Vector2d coeff, double Pn,double rs) const;
 
   /**
    * The are those Hermite-nodes that shape the polynomial during the
