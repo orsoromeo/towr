@@ -48,17 +48,17 @@ RangeOfMotionConstraint::RangeOfMotionConstraint (const KinematicModel::Ptr& mod
   nominal_ee_pos_B_           = model->GetNominalStanceInBase().at(ee);
   ee_ = ee;
   terrain_ = terrain;
-  slope_=1;
-  distance_=0.3;
-  HeightToCheck_= slope_*distance_;
-  SetRows(GetNumberOfNodes()*k3D);
-  SetRows(GetNumberOfNodes()*4);
+  theta_=45*M_PI/180;;
+  lenght_=0.4;
+  HeightToCheck_= lenght_*sin(theta_);
+  //SetRows(GetNumberOfNodes()*k3D);
+  SetRows(GetNumberOfNodes()*6);
 }
 
 int
 RangeOfMotionConstraint::GetRow (int node, int dim) const
 {
-  return node*4 + dim;
+  return node*6 + dim;
   //return node*k3D + dim;
 }
 
@@ -76,12 +76,17 @@ RangeOfMotionConstraint::UpdateConstraintAtInstance (double t, int k, VectorXd& 
   int a=GetRow(k,3);
   if (ee_<2) //quando scende deve essere cambiato
   {  
-    g.coeffRef(a,0)=1;
+    Vector3d one=Vector3d(1.0, 1.0,1.0);
+    g.middleRows(a,3)=one;
     //g.coeffRef(a,0) = pos_ee_W(2) + HeightToCheck_ - terrain_->GetHeight(pos_ee_W(0)+distance_, pos_ee_W(1));
   }
   else
   {
-    g.coeffRef(a,0) = pos_ee_W(2) + HeightToCheck_ - terrain_->GetHeight(pos_ee_W(0)+distance_, pos_ee_W(1));
+    g.coeffRef(a,0) = pos_ee_W(2) + HeightToCheck_ - terrain_->GetHeight(pos_ee_W(0)+lenght_*cos(theta_), pos_ee_W(1));
+    g.coeffRef(a+1,0) = pos_ee_W(2) + HeightToCheck_/3 - terrain_->GetHeight(pos_ee_W(0)+(lenght_*cos(theta_)/3), pos_ee_W(1));
+    g.coeffRef(a+2,0) = pos_ee_W(2) + HeightToCheck_*2/3 - terrain_->GetHeight(pos_ee_W(0)+(2*lenght_*cos(theta_)/3), pos_ee_W(1));
+    //std::cout<<g.middleRows(a,3)<<std::endl;
+
   }
   
   //std::cout<<"constraint "<<ee_<<" "<<t<<"  "<<g.coeffRef(a,0)<<std::endl;
@@ -107,6 +112,9 @@ RangeOfMotionConstraint::UpdateBoundsAtInstance (double t, int k, VecBound& boun
     bounds.at(GetRow(k,dim)) = b;
   }
    bounds.at(GetRow(k,3)) = ifopt::Bounds (0.02, 100);
+   bounds.at(GetRow(k,4)) = ifopt::Bounds (0.02, 100);
+   bounds.at(GetRow(k,5)) = ifopt::Bounds (0.02, 100);
+
   //bounds.at(GetRow(k,3)) = ifopt::Bounds (0.0, 100);
 }
 
@@ -139,7 +147,10 @@ RangeOfMotionConstraint::UpdateJacobianAtInstance (double t, int k,
     }
     else 
     {
-     jac.middleRows(GetRow(k,3),0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+distance_,pos_ee_W(1));
+     jac.middleRows(GetRow(k,3),0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+lenght_*cos(theta_),pos_ee_W(1));
+     jac.middleRows(GetRow(k,4),0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+lenght_*cos(theta_)/3,pos_ee_W(1));
+     jac.middleRows(GetRow(k,5),0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+lenght_*cos(theta_)*2/3,pos_ee_W(1));
+
     }
     //std::cout<<"Jacobian "<<jac.middleRows(row_start,4)<<std::endl;
   }
