@@ -136,7 +136,7 @@ public:
     // step, for convenience we use a GaitGenerator with some predefined gaits
     // for a variety of robots (walk, trot, pace, ...).
     auto gait_gen_ = GaitGenerator::MakeGaitGenerator(n_ee);
-    auto id_gait   = static_cast<GaitGenerator::Combos>(GaitGenerator::C0);
+    auto id_gait   = static_cast<GaitGenerator::Combos>(GaitGenerator::C6);
     gait_gen_->SetCombo(id_gait);
     for (int ee=0; ee<n_ee; ++ee) {
       params.ee_phase_durations_.push_back(gait_gen_->GetPhaseDurations(time, ee));

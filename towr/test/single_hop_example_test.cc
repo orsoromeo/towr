@@ -201,9 +201,9 @@ TEST(TOWR, singleHopExampleTest){
 
             //cout << "Contact force dertivative x,y,z:          \t";
             //cout << solution.ee_force_.at(0)->GetPoint(t).v().transpose() << "\t[N/s]" << endl;
-            cout << "lambda:   \t";
-            cout << solution.lambda_->GetPoint(t).p().transpose() << endl;
-            cout << solution.lambda_->GetPoint(t).v().transpose() << endl;
+            //cout << "lambda:   \t";
+            //cout << solution.lambda_->GetPoint(t).p().transpose() << endl;
+            //cout << solution.lambda_->GetPoint(t).v().transpose() << endl;
 
             bool contact = solution.phase_durations_.at(0)->IsContactPhase(t);
             std::string foot_in_contact = contact? "yes" : "no";

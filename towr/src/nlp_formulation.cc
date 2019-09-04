@@ -80,8 +80,8 @@ NlpFormulation::GetVariableSets (SplineHolder& spline_holder)
   auto contact_schedule = MakeContactScheduleVariables();
 
 
-  auto lambda= MakeLambdaVariables();
-  vars.insert(vars.end(), lambda.begin(), lambda.end());
+  //auto lambda= MakeLambdaVariables();
+  //vars.insert(vars.end(), lambda.begin(), lambda.end());
 
 
   // can also just be fixed timings that aren't optimized over, but still added
@@ -91,7 +91,7 @@ NlpFormulation::GetVariableSets (SplineHolder& spline_holder)
   }
 
   // stores these readily constructed spline
-  spline_holder = SplineHolder(lambda.at(0),
+  spline_holder = SplineHolder(//lambda.at(0),
                                base_motion.at(0), // linear
                                base_motion.at(1), // angular
                                params_.GetBasePolyDurations(),

@@ -48,8 +48,8 @@ RangeOfMotionConstraint::RangeOfMotionConstraint (const KinematicModel::Ptr& mod
   nominal_ee_pos_B_           = model->GetNominalStanceInBase().at(ee);
   ee_ = ee;
   terrain_ = terrain;
-  theta_=45*M_PI/180;;
-  lenght_=0.4;
+  theta_=30*M_PI/180;
+  lenght_=0.3;
   HeightToCheck_= lenght_*sin(theta_);
   //SetRows(GetNumberOfNodes()*k3D);
   SetRows(GetNumberOfNodes()*6);

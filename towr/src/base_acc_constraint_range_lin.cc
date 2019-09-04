@@ -75,7 +75,7 @@ BaseAccConstraintRangeLin::BaseAccConstraintRangeLin (const DynamicModel::Ptr& m
  SetRows(NumberNodes_*6);
  ee_motion_=spline_holder.ee_motion_;
  base_ << 0.0, 0.0, 1.0;
- lambda_=spline_holder.lambda_;
+ //lambda_=spline_holder.lambda_;
  m_=model_->m();
  g_= model_->g();
  base_angular_ = EulerConverter(spline_holder.base_angular_);
