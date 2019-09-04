@@ -83,7 +83,7 @@ NlpFormulation::GetVariableSets (SplineHolder& spline_holder)
   //auto lambda= MakeLambdaVariables();
   //vars.insert(vars.end(), lambda.begin(), lambda.end());
 
-
+  std::cout<<"Total time in NLP is: "<<params_.GetTotalTime()<<std::endl;
   // can also just be fixed timings that aren't optimized over, but still added
   // to spline_holder.
   if (params_.IsOptimizeTimings()) {
