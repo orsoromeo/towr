@@ -521,6 +521,14 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
   auto base_angular=EulerConverter(solution.base_angular_);
   double speed_factor=0.5;
   double sampling_time=0.004*speed_factor;
+
+  Eigen::MatrixXd oldFootPosDesWF(3,4);
+  Eigen::MatrixXd oldFootVelDesWF(3,4);
+  oldFootVelDesWF.setZero();
+  for(int ee=0; ee<solution.ee_motion_.size(); ee++){
+  oldFootPosDesWF.col(ee) = formulation_.initial_ee_W_.at(ee);
+  }
+  
   for(int i=0; i<solution.base_linear_->GetTotalTime()/sampling_time; i++)
   {
 
@@ -530,22 +538,26 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
     {
       dwl_msgs::ContactState contact;
       Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(t);
-      //Eigen::Vector3d footPosDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).p()-solution.base_linear_->GetPoint(t).p());
-      Eigen::Vector3d footPosDesWF = solution.ee_motion_.at(ee)->GetPoint(t).p();
+      Eigen::Vector3d footPosDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).p()-solution.base_linear_->GetPoint(t).p());
+      //Eigen::Vector3d footPosDesWF = solution.ee_motion_.at(ee)->GetPoint(t).p();
       contact.position.x = footPosDesWF(0) - solution.ee_motion_.at(ee)->GetPoint(0.0).p().x();
       contact.position.y = footPosDesWF(1) - solution.ee_motion_.at(ee)->GetPoint(0.0).p().y();
       contact.position.z = footPosDesWF(2) - solution.ee_motion_.at(ee)->GetPoint(0.0).p().z(); 
       //Eigen::Vector3d footVelDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).v() - solution.base_linear_->GetPoint(t).v());
-      Eigen::Vector3d footVelDesWF = solution.ee_motion_.at(ee)->GetPoint(t).v();
-      contact.velocity.x = footVelDesWF(0)*speed_factor;
-      contact.velocity.y = footVelDesWF(1)*speed_factor;
-      contact.velocity.z = footVelDesWF(2)*speed_factor;
+      Eigen::Vector3d footVelDesWF = solution.ee_motion_.at(ee)->GetPoint(t).v()*speed_factor;
+      //Eigen::Vector3d footVelDesWF = (footPosDesWF - oldFootPosDesWF.col(ee))/sampling_time;
+      contact.velocity.x = footVelDesWF(0);
+      contact.velocity.y = footVelDesWF(1);
+      contact.velocity.z = footVelDesWF(2);
+      oldFootPosDesWF.col(ee) = footPosDesWF;
 
       //Eigen::Vector3d footAccDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).a() - solution.base_linear_->GetPoint(t).a());
       Eigen::Vector3d footAccDesWF = solution.ee_motion_.at(ee)->GetPoint(t).a();
+      //Eigen::Vector3d footAccDesWF = (footVelDesWF - oldFootVelDesWF.col(ee))/sampling_time;
       contact.acceleration.x = footAccDesWF(0)*pow(speed_factor,2);
       contact.acceleration.y = footAccDesWF(0)*pow(speed_factor,2);
       contact.acceleration.z = footAccDesWF(0)*pow(speed_factor,2);
+      oldFootVelDesWF.col(ee) = footVelDesWF;
       switch(ee)
       {
        case 0: contact.name = "01_lf_foot"; break;
