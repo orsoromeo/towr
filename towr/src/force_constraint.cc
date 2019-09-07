@@ -147,15 +147,14 @@ ForceConstraint::GetValues () const
     for (plane=0; plane<6; plane++)
      {
       g(row++) = f.transpose() * f_polytope.col(plane)-d_polytope(plane);
-      std::cout<<g(row-1)<<std::endl;
      }
     
   time=0;
   }  
   std::cout<<f_polytope<<std::endl;
   std::cout<<"  "<<std::endl;
-    std::cout<<d_polytope.transpose()<<std::endl;
-   std::cout<<"  "<<std::endl;
+  std::cout<<d_polytope.transpose()<<std::endl;
+  std::cout<<"  "<<std::endl;
 
   return g;
 }
@@ -225,9 +224,9 @@ ForceConstraint::FillJacobianBlock (std::string var_set,
     else 
     {
 
-      thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0)); 
-      coeff1=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
-      coeff2=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
+      thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0)); 
+      coeff1=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
+      coeff2=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
 
     }
 
@@ -242,9 +241,10 @@ ForceConstraint::FillJacobianBlock (std::string var_set,
 
     row += n_constraints_per_node_;
     time=0;
- 
- }
 
+
+ }
+   
 }
 
 
@@ -273,7 +273,7 @@ ForceConstraint::FillJacobianBlock (std::string var_set,
     Vector3d vector_base_to_ee_B=ComputeBasetoEEB(time);
     Vector3d f = force_nodes.at(f_node_id).p();
 
-   double coeff1=0; double coeff2=0; double thetax=0;
+   double coeff1=0.0; double coeff2=0.0; double thetax=0.0;
     int j;
         int row_reset=row+5;
 
@@ -284,26 +284,36 @@ ForceConstraint::FillJacobianBlock (std::string var_set,
         thetax=ComputeBoundR(coeffN_(j),coeffR_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0)); 
         coeff1=ComputeCoeffForJacR(coeffN_(j),coeffR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
         coeff2=ComputeCoeffForJacR(coeffDN_(j),coeffDR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
-        
+            
       }
     else 
     {
-      thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0)); 
-      coeff1=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
-      coeff2=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
+      thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0)); 
+      coeff1=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
+      coeff2=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
+      std::cout<<" coeff0 "<<coeffL_(j)<<"  "<<" coeff1 "<<coeffN_(j)<<std::endl;
+      std::cout<<""<<std::endl;
+      std::cout<<"coeff1 "<<coeff1<<std::endl;
+          
 
     }
+    std::cout<<sin(thetax);
+    std::cout<<" "<<std::endl;
+    std::cout<<f.transpose();
+    std::cout<<" "<<std::endl;
+    std::cout<<cos(thetax);
+    std::cout<<" "<<std::endl;
 
-
-    jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)*+cos(thetax)*f(2))*coeff1+coeff2)*JacPosBWrtBaseAng.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
+    std::cout<<(-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1+coeff2<<std::endl;
+    jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1-coeff2)*JacPosBWrtBaseAng.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
     
   }
-
+    
     row += n_constraints_per_node_;
     time=0;
- 
- }
+   
 
+ }
 }
 //}
 //
@@ -403,14 +413,14 @@ ForceConstraint::FillJacobianBlock (std::string var_set,
       }
     else 
     {
-      thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0)); 
-      coeff1=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
-      coeff2=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
+      thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0)); 
+      coeff1=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
+      coeff2=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
 
     }
 
 
-    jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1+coeff2)*JacPosBWrtNodes.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
+    jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1-coeff2)*JacPosBWrtNodes.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
     
   }
 
@@ -467,24 +477,26 @@ ForceConstraint::FillJacobianBlock (std::string var_set,
 double ForceConstraint::ComputeBoundL (double coeff0, double coeff1,  double Posx, double Pn,double ls) const
 {
   double bound;
-  bound=(Posx-Pn)*(coeff0-coeff1)/(ls-Pn)+coeff1;
+  bound=(Posx-ls)*(coeff1-coeff0)/(Pn-ls)+coeff0;
   return bound;
 }
 double ForceConstraint::ComputeBoundR (double coeff0, double coeff1, double Posx, double Pn,double rs) const
 {
   double bound;
-  bound=(Posx-rs)*(coeff0-coeff1)/(Pn-rs)+coeff1;
+  bound=(Posx-Pn)*(coeff1-coeff0)/(rs-Pn)+coeff0;
   return bound;
 }
 double ForceConstraint::ComputeCoeffForJacL (double coeff0, double coeff1, double Pn,double ls) const
 {
   double bound;
-  bound=(coeff0-coeff1)/(ls-Pn);
+
+  bound=(coeff1-coeff0)/(Pn-ls);
+  return bound;
 }
 double ForceConstraint::ComputeCoeffForJacR (double coeff0, double coeff1, double Pn,double rs) const
 {
   double bound;
-  bound=(coeff0-coeff1)/(Pn-rs);
+  bound=(coeff1-coeff0)/(rs-Pn);
   return bound;
 }
 
@@ -522,7 +534,6 @@ void ForceConstraint::InitializeQuantities (const KinematicModel::Ptr& robot_mod
 
   d_polytope.resize(6);
   d_polytope.setZero();
-  std::cout<<" out "<<std::endl;
 
 }
 } /* namespace towr */
