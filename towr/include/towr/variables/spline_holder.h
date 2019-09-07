@@ -56,7 +56,7 @@ struct SplineHolder {
    * @param phase_durations  The phase durations of each endeffector.
    * @param ee_durations_change  True if the ee durations are optimized over.
    */
-  SplineHolder (NodesVariables::Ptr lambda,
+  SplineHolder (//NodesVariables::Ptr lambda,
                 NodesVariables::Ptr base_lin,
                 NodesVariables::Ptr base_ang,
                 const std::vector<double>& base_poly_durations,
@@ -72,7 +72,7 @@ struct SplineHolder {
 
   NodeSpline::Ptr base_linear_;
   NodeSpline::Ptr base_angular_;
-  NodeSpline::Ptr lambda_;
+  //NodeSpline::Ptr lambda_;
   std::vector<NodeSpline::Ptr> ee_motion_;
   std::vector<NodeSpline::Ptr> ee_force_;
   std::vector<PhaseDurations::Ptr> phase_durations_;

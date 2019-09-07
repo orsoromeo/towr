@@ -61,9 +61,9 @@ public:
   double GetHeightDerivWrtX(double x, double y) const override;
 
 private:
-  double block_start = 0.6;
+  double block_start = 0.5;
   double length_     = 3.5;
-  double height_     = 0.15; // [m]
+  double height_     = 0.1; // [m]
 
   double eps_ =0.001;
       //0.03; // approximate as slope

@@ -50,8 +50,9 @@ RangeOfMotionConstraint::RangeOfMotionConstraint (const KinematicModel::Ptr& mod
   ee_ = ee;
   terrain_ = terrain;
 
-  theta_=45*M_PI/180;;
-  lenght_=0.4;
+  theta_=37*M_PI/180;
+  lenght_=0.3;
+
   HeightToCheck_= lenght_*sin(theta_);
   //SetRows(GetNumberOfNodes()*k3D);
   SetRows(GetNumberOfNodes()*6);
@@ -91,8 +92,6 @@ RangeOfMotionConstraint::UpdateConstraintAtInstance (double t, int k, VectorXd& 
     g.coeffRef(a,0) = pos_ee_W(2) + HeightToCheck_ - terrain_->GetHeight(pos_ee_W(0)+lenght_*cos(theta_), pos_ee_W(1));
     g.coeffRef(a+1,0) = pos_ee_W(2) + HeightToCheck_/3 - terrain_->GetHeight(pos_ee_W(0)+(lenght_*cos(theta_)/3), pos_ee_W(1));
     g.coeffRef(a+2,0) = pos_ee_W(2) + HeightToCheck_*2/3 - terrain_->GetHeight(pos_ee_W(0)+(2*lenght_*cos(theta_)/3), pos_ee_W(1));
-    //std::cout<<g.middleRows(a,3)<<std::endl;
-
   }
 
   
@@ -123,7 +122,6 @@ RangeOfMotionConstraint::UpdateBoundsAtInstance (double t, int k, VecBound& boun
    bounds.at(GetRow(k,4)) = ifopt::Bounds (0.02, 100);
    bounds.at(GetRow(k,5)) = ifopt::Bounds (0.02, 100);
 
-  //bounds.at(GetRow(k,3)) = ifopt::Bounds (0.0, 100);
 }
 
 void
@@ -188,11 +186,7 @@ RangeOfMotionConstraint::GetDerivativeHeightWrtNodes (double jac_cols, double t,
   
 
   jac1= DerHeightWrtPosX*JacWrtNodesX + DerHeightWrtPosY * JacWrtNodesY;
-  //std::cout<<"time "<<t<<std::endl;
-  //std::cout<<JacWrtNodesX<<std::endl;
-  //std::cout<<JacWrtNodesY<<std::endl;
-  //std::cout<<"  "<<std::endl;
-  //std::cout<<"  "<<std::endl;
+  
 
   return jac1;
 }

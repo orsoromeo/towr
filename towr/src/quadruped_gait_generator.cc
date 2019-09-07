@@ -77,13 +77,15 @@ void
 QuadrupedGaitGenerator::SetCombo (Combos combo)
 {
   switch (combo) {
-    case C6: SetGaits({Stand, Walk1, Walk1, Walk1, Stand}); break; // overlap-walk
+    case C6: SetGaits({Stand, Walk1, Walk1, Stand}); break;
+    //case C6: SetGaits({Stand, Walk1, Walk1, Walk1, Stand}); break; // overlap-walk
     case C0: SetGaits({Stand, Walk1, Stand}); break;
-    case C1: SetGaits({Stand, Walk2E, Stand}); break; // overlap-walkcase C1: SetGaits({Stand, Run2, Run2, Run2, Run2E, Stand});     break; // fly trot
-    case C2: SetGaits({Stand, Run3, Run3, Run3, Run3E, Stand}); break; // pace
-    case C3: SetGaits({Stand, Hop1, Hop1, Hop1, Hop1E, Stand}); break; // bound
-    case C4: SetGaits({Stand, Hop3, Hop3, Hop3, Hop3E, Stand}); break; // gallop
-    case C5: SetGaits({Stand, Walk2, Walk2, Stand}); break;
+    case C1: SetGaits({Stand, Walk1, Stand}); break;
+    case C2: SetGaits({Stand, Walk2E, Stand}); break; // overlap-walkcase C1: SetGaits({Stand, Run2, Run2, Run2, Run2E, Stand});     break; // fly trot
+    case C3: SetGaits({Stand, Run3, Run3, Run3, Run3E, Stand}); break; // pace
+    case C4: SetGaits({Stand, Hop1, Hop1, Hop1, Hop1E, Stand}); break; // bound
+    case C5: SetGaits({Stand, Hop3, Hop3, Hop3, Hop3E, Stand}); break; // gallop
+    //case C6: SetGaits({Stand, Walk2, Walk2, Stand}); break;
     default: assert(false); std::cout << "Gait not defined\n"; break;
   }
 }
