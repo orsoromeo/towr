@@ -29,7 +29,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef TOWR_CONSTRAINTS_RANGE_OF_MOTION_CONSTRAINT_H_
 #define TOWR_CONSTRAINTS_RANGE_OF_MOTION_CONSTRAINT_H_
-
+#define _USE_MATH_DEFINES
+#include<math.h>
 #include <towr/variables/spline.h>
 #include <towr/variables/spline_holder.h>
 #include <towr/variables/euler_converter.h>
@@ -82,8 +83,8 @@ private:
   Eigen::Vector3d max_deviation_from_nominal_;
   Eigen::Vector3d nominal_ee_pos_B_;
   EE ee_;
-  double slope_;
-  double distance_;
+  double theta_;
+  double lenght_;
   double HeightToCheck_;
   // see TimeDiscretizationConstraint for documentation
   void UpdateConstraintAtInstance (double t, int k, VectorXd& g) const override;
