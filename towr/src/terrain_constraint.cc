@@ -63,6 +63,7 @@ TerrainConstraint::GetValues () const
   int row = 0;
   for (int id : node_ids_) {
     Vector3d p = nodes.at(id).p();
+    //g(row++) = p.z() - terrain_->GetHeight(p.x(), p.y());
     g(row++) = p.z() - terrain_->GetHeight(p.x()+0.02, p.y());
     g(row++) = p.z() - terrain_->GetHeight(p.x()-0.02, p.y());
 
@@ -82,14 +83,14 @@ TerrainConstraint::GetBounds () const
     if (ee_motion_->IsConstantNode(id))
       {
         bounds.at(row++) = ifopt::BoundZero;
-        bounds.at(row)= ifopt::BoundZero;
+        bounds.at(row++)= ifopt::BoundZero;
      }
     else
       {
         bounds.at(row++) = ifopt::Bounds(0.05, 0.5);
-        bounds.at(row) = ifopt::Bounds(-0.5, 0.5);
+        bounds.at(row++) = ifopt::Bounds(-0.5, 0.5);
      }
-    row++;
+    //row++;
   }
 
   return bounds;
@@ -112,8 +113,9 @@ TerrainConstraint::FillJacobianBlock (std::string var_set, Jacobian& jac) const
       {
         
         int idx = ee_motion_->GetOptIndex(NodesVariables::NodeValueInfo(id, kPos, dim));
+        //jac.coeffRef(row, idx) = -terrain_->GetDerivativeOfHeightWrt(To2D(dim), p.x(), p.y());
         jac.coeffRef(row, idx) = -terrain_->GetDerivativeOfHeightWrt(To2D(dim), p.x()+0.02, p.y());
-        jac.coeffRef(row, idx) = -terrain_->GetDerivativeOfHeightWrt(To2D(dim), p.x()-0.02, p.y());
+        jac.coeffRef(row-1, idx) = -terrain_->GetDerivativeOfHeightWrt(To2D(dim), p.x()-0.02, p.y());
 
       }
       row++;
