@@ -141,6 +141,7 @@ public:
                         TotalTime,                   ///< sets TotalDurationConstraint
                         Terrain,                     ///< sets TerrainConstraint
                         Force,                       ///< sets ForceConstraint
+                        ForcePolytope,               ///< sets ForcePolytopeConstraint
                         Swing,                       ///< sets SwingConstraint
                         BaseRom,                     ///< sets BaseMotionConstraint
                         BaseAcc,                     ///< sets SplineAccConstraint

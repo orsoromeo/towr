@@ -50,10 +50,11 @@ ForceConstraint::ForceConstraint (const KinematicModel::Ptr& robot_model,
   fn_max_  = force_limit;
   mu_      = terrain->GetFrictionCoeff();
   ee_      = ee;
-  n_constraints_per_node_ = 1 + 2*k2D+6; // positive normal force + 4 friction pyramid constraints
+  n_constraints_per_node_ = 1 + 2*k2D; // positive normal force + 4 friction pyramid constraints
+  //n_constraints_per_node_ = 1 + 2*k2D+6; // positive normal force + 4 friction pyramid constraints
   ee_force_node_=spline.ee_force_.at(ee);
   ee_motion_node_=spline.ee_motion_.at(ee);
-  InitializeQuantities(robot_model,ee);
+  
 }
 
 void
@@ -111,45 +112,6 @@ ForceConstraint::GetValues () const
     g(row++) = f.transpose() * (t2 - mu_*n); // t2 < mu*n
     g(row++) = f.transpose() * (t2 + mu_*n); // t2 > -mu*n
    
-
-    Vector3d vector_base_to_ee_B=ComputeBasetoEEB(time);
-  
-    double right_side=nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0);
-    double left_side=nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0);
-    int j;
-    double thetax=0;
-    for (j=0; j<4; j++)
-    {
-
-       if (vector_base_to_ee_B(0)>nominal_ee_pos_B_(0)) 
-     {
-      thetax=ComputeBoundR(coeffN_(j),coeffR_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), right_side); 
-      f_polytope(0,j)=cos(thetax);
-      f_polytope(2,j)=sin(thetax);
-      d_polytope(j)=ComputeBoundR(coeffDN_(j),coeffDR_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), right_side);
-     }
-      else 
-    {
-       thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), left_side); 
-       f_polytope(0,j)=cos(thetax);
-       f_polytope(2,j)=sin(thetax);
-       d_polytope(j)=ComputeBoundL(coeffDL_(j), coeffDN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), left_side);
-    }
-   }
-    f_polytope(1,4)=1;
-    f_polytope(1,5)=-1;
-    
-    
-    d_polytope(4)= 90;
-    d_polytope(5)= 90;
-
-    int plane; 
-    for (plane=0; plane<6; plane++)
-     {
-      g(row++) = f.transpose() * f_polytope.col(plane)-d_polytope(plane);
-     }
-    
-  time=0;
   }  
   std::cout<<f_polytope<<std::endl;
   std::cout<<"  "<<std::endl;
@@ -171,12 +133,6 @@ ForceConstraint::GetBounds () const
     bounds.push_back(ifopt::BoundSmallerZero); // f_t2 <  mu*n
     bounds.push_back(ifopt::BoundGreaterZero); // f_t2 > -mu*n
     
-    bounds.push_back(ifopt::BoundSmallerZero);
-    bounds.push_back(ifopt::BoundSmallerZero);
-    bounds.push_back(ifopt::BoundSmallerZero);
-    bounds.push_back(ifopt::BoundSmallerZero);
-    bounds.push_back(ifopt::BoundSmallerZero);
-    bounds.push_back(ifopt::BoundSmallerZero);
   }
 
   return bounds;
@@ -187,136 +143,6 @@ ForceConstraint::FillJacobianBlock (std::string var_set,
                                     Jacobian& jac) const
 {
 
-  if (var_set == id::base_lin_nodes) 
-  {
-    double time=0;
-    int row=0;
-    auto force_nodes = ee_force_->GetNodes();
-    for (int f_node_id : pure_stance_force_node_ids_) 
-    {
-      int i;
-      for (i=0; i<f_node_id+1; i++)
-      {
-        if (time<ee_force_node_->GetTotalTime())
-       { //std::cout<<i<<"  "<<f_node_id<<std::endl;
-         time += T_.at(i);
-       }
-      } 
-    time -= T_.at(0);
-    EulerConverter::MatrixSXd b_R_w = base_angular_.GetRotationMatrixBaseToWorld(time).transpose();
-
-    Jacobian JacPosBWrtBaseLin= -1*b_R_w*base_linear_->GetJacobianWrtNodes(time, kPos);
-    Vector3d vector_base_to_ee_B=ComputeBasetoEEB(time);
-    Vector3d f = force_nodes.at(f_node_id).p();
-    double coeff1=0; double coeff2=0; double thetax=0;
-    int j;
-    int row_reset=row+5;
-    for (j=0; j<4; j++)
-   {
-    if (vector_base_to_ee_B(0)>nominal_ee_pos_B_(0)) 
-      {
-
-        thetax=ComputeBoundR(coeffN_(j),coeffR_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0)); 
-        coeff1=ComputeCoeffForJacR(coeffN_(j),coeffR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
-        coeff2=ComputeCoeffForJacR(coeffDN_(j),coeffDR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
-        
-      }
-    else 
-    {
-
-      thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0)); 
-      coeff1=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
-      coeff2=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
-
-    }
-
-
-    jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1-coeff2)*JacPosBWrtBaseLin.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
-    //jac.middleRows(5*row+6, 1) = -coeff*JacPosBWrtBaseLin.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
-    //jac.middleRows(5*row+7, 1) = -coeff*JacPosBWrtBaseLin.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
-    //jac.middleRows(5*row+8, 1) = -coeff*JacPosBWrtBaseLin.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
-    //jac.middleRows(5*row+9, 1) = -coeff*JacPosBWrtBaseLin.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
-    //jac.middleRows(5*row+10, 1) =-coeff*JacPosBWrtBaseLin.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
-  }
-
-    row += n_constraints_per_node_;
-    time=0;
-
-
- }
-   
-}
-
-
-  if (var_set == id::base_ang_nodes) 
-  {
-   
-
-    int row=0; double time=0;
-    auto force_nodes = ee_force_->GetNodes();
-    for (int f_node_id : pure_stance_force_node_ids_) 
-  {
-      int i;
-    for (i=0; i<f_node_id+1; i++)
-    {
-      if (time<ee_force_node_->GetTotalTime())
-      { //std::cout<<i<<"  "<<f_node_id<<std::endl;
-        time += T_.at(i);
-      }
-    }
-    time -= T_.at(0); double coeff=0;
-    Vector3d base_W   = base_linear_->GetPoint(time).p();
-    Vector3d ee_pos_W = ee_motion_node_->GetPoint(time).p();
-    Vector3d r_W = ee_pos_W - base_W;
-    Jacobian JacPosBWrtBaseAng=base_angular_.DerivOfRotVecMult(time,r_W, true);
-     
-    Vector3d vector_base_to_ee_B=ComputeBasetoEEB(time);
-    Vector3d f = force_nodes.at(f_node_id).p();
-
-   double coeff1=0.0; double coeff2=0.0; double thetax=0.0;
-    int j;
-        int row_reset=row+5;
-
-    for (j=0; j<4; j++)
-   {
-    if (vector_base_to_ee_B(0)>nominal_ee_pos_B_(0)) 
-      {
-        thetax=ComputeBoundR(coeffN_(j),coeffR_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0)); 
-        coeff1=ComputeCoeffForJacR(coeffN_(j),coeffR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
-        coeff2=ComputeCoeffForJacR(coeffDN_(j),coeffDR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
-            
-      }
-    else 
-    {
-      thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0)); 
-      coeff1=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
-      coeff2=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
-      std::cout<<" coeff0 "<<coeffL_(j)<<"  "<<" coeff1 "<<coeffN_(j)<<std::endl;
-      std::cout<<""<<std::endl;
-      std::cout<<"coeff1 "<<coeff1<<std::endl;
-          
-
-    }
-    std::cout<<sin(thetax);
-    std::cout<<" "<<std::endl;
-    std::cout<<f.transpose();
-    std::cout<<" "<<std::endl;
-    std::cout<<cos(thetax);
-    std::cout<<" "<<std::endl;
-
-    std::cout<<(-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1+coeff2<<std::endl;
-    jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1-coeff2)*JacPosBWrtBaseAng.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
-    
-  }
-    
-    row += n_constraints_per_node_;
-    time=0;
-   
-
- }
-}
-//}
-//
   if (var_set == ee_force_->GetName())
    {
     int row = 0;
@@ -341,9 +167,6 @@ ForceConstraint::FillJacobianBlock (std::string var_set,
         jac.coeffRef(row_reset++, idx) = t2(dim)-mu_*n(dim);  // f_t2 <  mu*n
         jac.coeffRef(row_reset++, idx) = t2(dim)+mu_*n(dim);  // f_t2 > -mu*n
         
-        int plane=0;
-        for (plane=0; plane<6; plane++)
-         {jac.coeffRef(row_reset++,idx) = f_polytope(dim,plane);}
        }
       row += n_constraints_per_node_;
     }
@@ -396,33 +219,6 @@ ForceConstraint::FillJacobianBlock (std::string var_set,
        
       }
       
-      EulerConverter::MatrixSXd b_R_w = base_angular_.GetRotationMatrixBaseToWorld(time).transpose();
-
-      Jacobian JacPosBWrtNodes=b_R_w*ee_motion_node_->GetJacobianWrtNodes(time,kPos);
-      Vector3d vector_base_to_ee_B=ComputeBasetoEEB(time);
-      double coeff1=0; double coeff2=0; double thetax=0;
-    int j;
-    for (j=0; j<4; j++)
-   {
-    if (vector_base_to_ee_B(0)>nominal_ee_pos_B_(0)) 
-      {
-        thetax=ComputeBoundR(coeffN_(j),coeffR_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0)); 
-        coeff1=ComputeCoeffForJacR(coeffN_(j),coeffR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
-        coeff2=ComputeCoeffForJacR(coeffDN_(j),coeffDR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
-        
-      }
-    else 
-    {
-      thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0)); 
-      coeff1=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
-      coeff2=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
-
-    }
-
-
-    jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1-coeff2)*JacPosBWrtNodes.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
-    
-  }
 
     row +=n_constraints_per_node_;
     time=0;
@@ -473,67 +269,5 @@ ForceConstraint::FillJacobianBlock (std::string var_set,
 //  }
 // }    
 }
-//
-double ForceConstraint::ComputeBoundL (double coeff0, double coeff1,  double Posx, double Pn,double ls) const
-{
-  double bound;
-  bound=(Posx-ls)*(coeff1-coeff0)/(Pn-ls)+coeff0;
-  return bound;
-}
-double ForceConstraint::ComputeBoundR (double coeff0, double coeff1, double Posx, double Pn,double rs) const
-{
-  double bound;
-  bound=(Posx-Pn)*(coeff1-coeff0)/(rs-Pn)+coeff0;
-  return bound;
-}
-double ForceConstraint::ComputeCoeffForJacL (double coeff0, double coeff1, double Pn,double ls) const
-{
-  double bound;
 
-  bound=(coeff1-coeff0)/(Pn-ls);
-  return bound;
-}
-double ForceConstraint::ComputeCoeffForJacR (double coeff0, double coeff1, double Pn,double rs) const
-{
-  double bound;
-  bound=(coeff1-coeff0)/(rs-Pn);
-  return bound;
-}
-
-Eigen::Vector3d ForceConstraint::ComputeBasetoEEB (double time) const
-{
- Vector3d base_W  = base_linear_->GetPoint(time).p();
-  Vector3d pos_ee_W = ee_motion_node_->GetPoint(time).p();
-  EulerConverter::MatrixSXd b_R_w = base_angular_.GetRotationMatrixBaseToWorld(time).transpose();
-
-  Vector3d vector_base_to_ee_W = pos_ee_W - base_W;
-  Vector3d vector_base_to_ee_B = b_R_w*(vector_base_to_ee_W);
-  return vector_base_to_ee_B;
-}
-void ForceConstraint::InitializeQuantities (const KinematicModel::Ptr& robot_model, double ee) 
-{
-  
-  coeffL_.resize(4);
-  Eigen::MatrixXd pp=robot_model->GetThetaL();
-  coeffL_=robot_model->GetThetaL().col(ee);
-  coeffN_.resize(4);
-  coeffN_=robot_model->GetThetaN().col(ee);
-  coeffR_.resize(4);
-  coeffR_=robot_model->GetThetaR().col(ee);
-  
-  coeffDL_.resize(4);
-  coeffDL_=robot_model->GetDL().col(ee);
-  coeffDN_.resize(4);
-  coeffDN_=robot_model->GetDN().col(ee);
-  coeffDR_.resize(4);
-  coeffDR_=robot_model->GetDR().col(ee);
-
-
-  f_polytope.resize(3,6);
-  f_polytope.setZero();
-
-  d_polytope.resize(6);
-  d_polytope.setZero();
-
-}
 } /* namespace towr */

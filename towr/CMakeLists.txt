@@ -47,6 +47,7 @@ add_library(${PROJECT_NAME} SHARED
 
   src/swing_constraint.cc
   src/force_constraint.cc
+  src/force_polytope_constraint.cc
   src/total_duration_constraint.cc
   src/dynamic_constraint.cc
   src/range_of_motion_constraint.cc
