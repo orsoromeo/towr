@@ -267,20 +267,20 @@ ForcePolytopeConstraint::FillJacobianBlock (std::string var_set,
       thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0)); 
       coeff1=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
       coeff2=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
-      std::cout<<" coeff0 "<<coeffL_(j)<<"  "<<" coeff1 "<<coeffN_(j)<<std::endl;
-      std::cout<<""<<std::endl;
-      std::cout<<"coeff1 "<<coeff1<<std::endl;
+      //std::cout<<" coeff0 "<<coeffL_(j)<<"  "<<" coeff1 "<<coeffN_(j)<<std::endl;
+      //std::cout<<""<<std::endl;
+      //std::cout<<"coeff1 "<<coeff1<<std::endl;
           
 
     }
-    std::cout<<sin(thetax);
-    std::cout<<" "<<std::endl;
-    std::cout<<f.transpose();
-    std::cout<<" "<<std::endl;
-    std::cout<<cos(thetax);
-    std::cout<<" "<<std::endl;
+    //std::cout<<sin(thetax);
+    //std::cout<<" "<<std::endl;
+    //std::cout<<f.transpose();
+    //std::cout<<" "<<std::endl;
+    //std::cout<<cos(thetax);
+    //std::cout<<" "<<std::endl;
 
-    std::cout<<(-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1+coeff2<<std::endl;
+    //std::cout<<(-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1+coeff2<<std::endl;
     jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1-coeff2)*JacPosBWrtBaseAng.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
     
   }
