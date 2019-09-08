@@ -555,8 +555,8 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
       Eigen::Vector3d footAccDesWF = solution.ee_motion_.at(ee)->GetPoint(t).a();
       //Eigen::Vector3d footAccDesWF = (footVelDesWF - oldFootVelDesWF.col(ee))/sampling_time;
       contact.acceleration.x = footAccDesWF(0)*pow(speed_factor,2);
-      contact.acceleration.y = footAccDesWF(0)*pow(speed_factor,2);
-      contact.acceleration.z = footAccDesWF(0)*pow(speed_factor,2);
+      contact.acceleration.y = footAccDesWF(1)*pow(speed_factor,2);
+      contact.acceleration.z = footAccDesWF(2)*pow(speed_factor,2);
       oldFootVelDesWF.col(ee) = footVelDesWF;
       switch(ee)
       {
