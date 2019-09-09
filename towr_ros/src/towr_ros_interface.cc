@@ -526,6 +526,7 @@ void TowrRosInterface::ToRosAndPublish()
   Eigen::MatrixXd oldFootPosDesWF(3,4);
   Eigen::MatrixXd oldFootVelDesWF(3,4);
   oldFootVelDesWF.setZero();
+  ros::Rate loop_rate_(250.0);
   for(int ee=0; ee<solution.ee_motion_.size(); ee++){
   oldFootPosDesWF.col(ee) = formulation_.initial_ee_W_.at(ee);
   }
@@ -639,6 +640,7 @@ void TowrRosInterface::ToRosAndPublish()
     planned_wt.trajectory.push_back(planned_wbs_msg);
 
     dwltrajectory_.publish(planned_wt);
+    loop_rate_.sleep();
 
   }
   

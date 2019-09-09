@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 
 #include <ros/ros.h>
+#include <ros/rate.h>
 #include <rosbag/bag.h>
 #include <std_srvs/Empty.h>
 
