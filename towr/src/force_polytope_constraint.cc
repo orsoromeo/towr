@@ -102,38 +102,44 @@ ForcePolytopeConstraint::GetValues () const
     Vector3d vector_base_to_ee_B=ComputeBasetoEEB(time);
     double baseToHipX = vector_base_to_ee_B(0) - base_to_hip_distance(0);
     double baseToHipZ = vector_base_to_ee_B(2) - base_to_hip_distance(2);
-    std::cout<<baseToHipX<<" "<<baseToHipZ<<std::endl;
+    std::cout<<"base to hip distance x y are"<<baseToHipX<<" "<<baseToHipZ<<std::endl;
     double squaredHip2FootDistance = pow(baseToHipX, 2) + pow(baseToHipZ, 2);
     double hip2FootDistance = sqrt(squaredHip2FootDistance);
-    double legPitchAngle = atan2(baseToHipZ, baseToHipX);
 
-    double right_side=nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0);
-    double left_side=nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0);
-    int j;
+    std::cout<<"base to hip radius is"<<hip2FootDistance<<std::endl;
+    double legPitchAngle = 0.0;//atan2(baseToHipX, baseToHipZ);
+    std::cout<<"legs pitch angle is"<<legPitchAngle<<std::endl;
+
+    double nominalHip2FootDistance = 0.55;
+    double max_extension=nominalHip2FootDistance + 0.1;
+    double max_retraction=nominalHip2FootDistance - 0.1;
+    
     double thetax=0;
-    for (j=0; j<4; j++)
+
+    int halfspacesNumber = 4;
+    for (int j=0; j<halfspacesNumber; j++)
     {
 
-       if (vector_base_to_ee_B(0)>nominal_ee_pos_B_(0)) 
-     {
-      thetax=ComputeBoundR(coeffN_(j),coeffR_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), right_side); 
-      //f_polytope(0,j)=cos(thetax);
-      //f_polytope(2,j)=sin(thetax);
-      d_polytope(j)=ComputeBoundR(coeffDN_(j),coeffDR_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), right_side);
+    if (hip2FootDistance>nominalHip2FootDistance) {
+      //{ComputeBoundR (double coeff0, double coeff1, double Posx, double Pn,double rs)
+        //bound=(Posx-Pn)*(coeff1-coeff0)/(rs-Pn)+coeff0;
+      thetax=ComputeBoundR(coeffN_(j), coeffR_(j), hip2FootDistance, nominalHip2FootDistance, max_extension); 
+      d_polytope(j)=ComputeBoundR(coeffDN_(j),coeffDR_(j), hip2FootDistance, nominalHip2FootDistance, max_extension);
      }
       else 
     {
-       thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), left_side); 
-      //f_polytope(0,j)=cos(thetax);
-      //f_polytope(2,j)=sin(thetax);
-       d_polytope(j)=ComputeBoundL(coeffDL_(j), coeffDN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), left_side);
+       thetax=ComputeBoundL(coeffL_(j), coeffN_(j), hip2FootDistance, nominalHip2FootDistance, max_retraction);
+       //ForcePolytopeConstraint::ComputeBoundL (double coeff0, double coeff1,  double Posx, double Pn,double ls) const
+       //bound=(Posx-ls)*(coeff1-coeff0)/(Pn-ls)+coeff0;
+       d_polytope(j)=ComputeBoundL(coeffDL_(j), coeffDN_(j), hip2FootDistance, nominalHip2FootDistance, max_retraction);
     }
+   
+    std::cout<<"theta x is "<<thetax<<" and d is "<< d_polytope(j) <<std::endl;
+    //f_polytope(0,j)=cos(thetax);
+    //f_polytope(2,j)=sin(thetax);
+    f_polytope(0,j)=cos(legPitchAngle)*cos(thetax) - sin(legPitchAngle)*sin(thetax); //f_polytope(0,j)=cos(thetax + legPitchAngle);
+    f_polytope(2,j)=sin(legPitchAngle)*cos(thetax) + cos(legPitchAngle)*sin(thetax); //f_polytope(2,j)=sin(thetax + legPitchAngle);
    }
-  
-  //f_polytope(0,j)=cos(thetax);
-  //f_polytope(2,j)=sin(thetax);
-  f_polytope(0,j)=cos(legPitchAngle)*cos(thetax) - sin(legPitchAngle)*sin(thetax); //f_polytope(0,j)=cos(thetax + legPitchAngle);
-  f_polytope(2,j)=sin(legPitchAngle)*cos(thetax) + cos(legPitchAngle)*sin(thetax); //f_polytope(2,j)=cos(thetax + legPitchAngle);
 
     f_polytope(1,4)=1;
     f_polytope(1,5)=-1;
@@ -150,10 +156,10 @@ ForcePolytopeConstraint::GetValues () const
     
   time=0;
   }  
-  std::cout<<f_polytope<<std::endl;
-  std::cout<<"  "<<std::endl;
-  std::cout<<d_polytope.transpose()<<std::endl;
-  std::cout<<"  "<<std::endl;
+  //std::cout<<f_polytope<<std::endl;
+  //std::cout<<"  "<<std::endl;
+  //std::cout<<d_polytope.transpose()<<std::endl;
+  //std::cout<<"  "<<std::endl;
 
   return g;
 }
@@ -201,8 +207,14 @@ ForcePolytopeConstraint::FillJacobianBlock (std::string var_set,
 
     Jacobian JacPosBWrtBaseLin= -1*b_R_w*base_linear_->GetJacobianWrtNodes(time, kPos);
     Vector3d vector_base_to_ee_B=ComputeBasetoEEB(time);
+    double baseToHipX = vector_base_to_ee_B(0) - base_to_hip_distance(0);
+    double baseToHipZ = vector_base_to_ee_B(2) - base_to_hip_distance(2);
+    double squaredHip2FootDistance = pow(baseToHipX, 2) + pow(baseToHipZ, 2);
+    double hip2FootDistance = sqrt(squaredHip2FootDistance);
+    double legPitchAngle = 0.0;// = atan2(baseToHipX, baseToHipZ);
+
     Vector3d f = force_nodes.at(f_node_id).p();
-    double coeff1=0; double coeff2=0; double thetax=0;
+    double theta_coeff=0; double d_coeff=0; double thetax=0;
     int j;
     int row_reset=row;
     for (j=0; j<4; j++)
@@ -211,23 +223,44 @@ ForcePolytopeConstraint::FillJacobianBlock (std::string var_set,
       {
 
         thetax=ComputeBoundR(coeffN_(j),coeffR_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0)); 
-        coeff1=ComputeCoeffForJacR(coeffN_(j),coeffR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
-        coeff2=ComputeCoeffForJacR(coeffDN_(j),coeffDR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
+        theta_coeff=ComputeCoeffForJacR(coeffN_(j),coeffR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
+        d_coeff=ComputeCoeffForJacR(coeffDN_(j),coeffDR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
         
       }
     else 
     {
 
       thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0)); 
-      coeff1=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
-      coeff2=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
+      theta_coeff=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
+      d_coeff=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
 
     }
 
 
-    jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1-coeff2)*JacPosBWrtBaseLin.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
-    std::cout<<"JacPosBWrtBaseLin row 0"<<JacPosBWrtBaseLin.row(0)<<std::endl;
-    std::cout<<"jac.middleRows(row_reset++, 1)"<<JacPosBWrtBaseLin.row(0)<<std::endl;
+    double dlegPitchAngle_dpx = - vector_base_to_ee_B(2)/squaredHip2FootDistance;
+    double dlegPitchAngle_dpz = vector_base_to_ee_B(0)/squaredHip2FootDistance;
+    double dr_dpx = vector_base_to_ee_B(0)/hip2FootDistance;
+    double dr_dpz = vector_base_to_ee_B(2)/hip2FootDistance;
+    double dthetax_dpx = theta_coeff*dr_dpx;
+    double dthetax_dpz = theta_coeff*dr_dpx;
+
+    double da_dpx = -sin(thetax + legPitchAngle)*(dlegPitchAngle_dpx + dthetax_dpx);
+    double da_dpz = -sin(thetax + legPitchAngle)*(dlegPitchAngle_dpz + dthetax_dpz);
+    double dc_dpx = cos(thetax + legPitchAngle)*(dlegPitchAngle_dpx + dthetax_dpx);
+    double dc_dpz = cos(thetax + legPitchAngle)*(dlegPitchAngle_dpz + dthetax_dpz);
+    double dd_dpx = d_coeff;
+    double dd_dpz = d_coeff;
+    jac.middleRows(row_reset++, 1) = (da_dpx*f(0)+dc_dpx*f(2)-dd_dpx)*JacPosBWrtBaseLin.row(0) + (da_dpz*f(0)+dc_dpz*f(2)-dd_dpz)*JacPosBWrtBaseLin.row(2);
+
+    //double da_dpx = -sin(thetax)*theta_coeff;
+    //Jacobian da_dbaseLin = da_dpx*JacPosBWrtBaseLin.row(0);
+    //double dc_dpx = cos(thetax)*theta_coeff;
+    //Jacobian dc_dbaseLin = dc_dbaseLin*JacPosBWrtBaseLin.row(0);
+    //double dd_dpx = d_coeff;
+    //Jacobian dd_dbaseLin =  dd_dpx*JacPosBWrtBaseLin.row(0);
+
+    //jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)+cos(thetax)*f(2))*theta_coeff-d_coeff)*JacPosBWrtBaseLin.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
+
   }
 
     row += n_constraints_per_node_;
@@ -262,9 +295,15 @@ ForcePolytopeConstraint::FillJacobianBlock (std::string var_set,
     Jacobian JacPosBWrtBaseAng=base_angular_.DerivOfRotVecMult(time,r_W, true);
      
     Vector3d vector_base_to_ee_B=ComputeBasetoEEB(time);
+    double baseToHipX = vector_base_to_ee_B(0) - base_to_hip_distance(0);
+    double baseToHipZ = vector_base_to_ee_B(2) - base_to_hip_distance(2);
+    double squaredHip2FootDistance = pow(baseToHipX, 2) + pow(baseToHipZ, 2);
+    double hip2FootDistance = sqrt(squaredHip2FootDistance);
+    double legPitchAngle = 0.0;// = atan2(baseToHipX, baseToHipZ);
+
     Vector3d f = force_nodes.at(f_node_id).p();
 
-   double coeff1=0.0; double coeff2=0.0; double thetax=0.0;
+   double theta_coeff=0.0; double d_coeff=0.0; double thetax=0.0;
     int j;
     int row_reset=row;
 
@@ -273,30 +312,37 @@ ForcePolytopeConstraint::FillJacobianBlock (std::string var_set,
     if (vector_base_to_ee_B(0)>nominal_ee_pos_B_(0)) 
       {
         thetax=ComputeBoundR(coeffN_(j),coeffR_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0)); 
-        coeff1=ComputeCoeffForJacR(coeffN_(j),coeffR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
-        coeff2=ComputeCoeffForJacR(coeffDN_(j),coeffDR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
+        theta_coeff=ComputeCoeffForJacR(coeffN_(j),coeffR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
+        d_coeff=ComputeCoeffForJacR(coeffDN_(j),coeffDR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
             
       }
     else 
     {
       thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0)); 
-      coeff1=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
-      coeff2=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
-      std::cout<<" coeff0 "<<coeffL_(j)<<"  "<<" coeff1 "<<coeffN_(j)<<std::endl;
-      std::cout<<""<<std::endl;
-      std::cout<<"coeff1 "<<coeff1<<std::endl;
+      theta_coeff=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
+      d_coeff=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
+      //std::cout<<" coeff0 "<<coeffL_(j)<<"  "<<" coeff1 "<<coeffN_(j)<<std::endl;
+      //std::cout<<""<<std::endl;
+      //std::cout<<"coeff1 "<<coeff1<<std::endl;
           
 
     }
-    std::cout<<sin(thetax);
-    std::cout<<" "<<std::endl;
-    std::cout<<f.transpose();
-    std::cout<<" "<<std::endl;
-    std::cout<<cos(thetax);
-    std::cout<<" "<<std::endl;
 
-    std::cout<<(-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1+coeff2<<std::endl;
-    jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1-coeff2)*JacPosBWrtBaseAng.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
+    double dlegPitchAngle_dpx = - vector_base_to_ee_B(2)/squaredHip2FootDistance;
+    double dlegPitchAngle_dpz = vector_base_to_ee_B(0)/squaredHip2FootDistance;
+    double dr_dpx = vector_base_to_ee_B(0)/hip2FootDistance;
+    double dr_dpz = vector_base_to_ee_B(2)/hip2FootDistance;
+    double dthetax_dpx = theta_coeff*dr_dpx;
+    double dthetax_dpz = theta_coeff*dr_dpx;
+
+    double da_dpx = -sin(thetax + legPitchAngle)*(dlegPitchAngle_dpx + dthetax_dpx);
+    double da_dpz = -sin(thetax + legPitchAngle)*(dlegPitchAngle_dpz + dthetax_dpz);
+    double dc_dpx = cos(thetax + legPitchAngle)*(dlegPitchAngle_dpx + dthetax_dpx);
+    double dc_dpz = cos(thetax + legPitchAngle)*(dlegPitchAngle_dpz + dthetax_dpz);
+    double dd_dpx = d_coeff;
+    double dd_dpz = d_coeff;
+    jac.middleRows(row_reset++, 1) = (da_dpx*f(0)+dc_dpx*f(2)-dd_dpx)*JacPosBWrtBaseAng.row(0) + (da_dpz*f(0)+dc_dpz*f(2)-dd_dpz)*JacPosBWrtBaseAng.row(2);
+    //jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1-coeff2)*JacPosBWrtBaseAng.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
     
   }
     
@@ -366,27 +412,45 @@ ForcePolytopeConstraint::FillJacobianBlock (std::string var_set,
 
       Jacobian JacPosBWrtNodes=b_R_w*ee_motion_node_->GetJacobianWrtNodes(time,kPos);
       Vector3d vector_base_to_ee_B=ComputeBasetoEEB(time);
-      double coeff1=0; double coeff2=0; double thetax=0;
+      double baseToHipX = vector_base_to_ee_B(0) - base_to_hip_distance(0);
+      double baseToHipZ = vector_base_to_ee_B(2) - base_to_hip_distance(2);
+      double squaredHip2FootDistance = pow(baseToHipX, 2) + pow(baseToHipZ, 2);
+      double hip2FootDistance = sqrt(squaredHip2FootDistance);
+      double legPitchAngle = 0.0;// = atan2(baseToHipX, baseToHipZ);
+      double theta_coeff=0; double d_coeff=0; double thetax=0;
     int j;
     for (j=0; j<4; j++)
    {
     if (vector_base_to_ee_B(0)>nominal_ee_pos_B_(0)) 
       {
         thetax=ComputeBoundR(coeffN_(j),coeffR_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0)); 
-        coeff1=ComputeCoeffForJacR(coeffN_(j),coeffR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
-        coeff2=ComputeCoeffForJacR(coeffDN_(j),coeffDR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
+        theta_coeff=ComputeCoeffForJacR(coeffN_(j),coeffR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
+        d_coeff=ComputeCoeffForJacR(coeffDN_(j),coeffDR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
         
       }
     else 
     {
       thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0)); 
-      coeff1=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
-      coeff2=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
+      theta_coeff=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
+      d_coeff=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
 
     }
 
+    double dlegPitchAngle_dpx = - vector_base_to_ee_B(2)/squaredHip2FootDistance;
+    double dlegPitchAngle_dpz = vector_base_to_ee_B(0)/squaredHip2FootDistance;
+    double dr_dpx = vector_base_to_ee_B(0)/hip2FootDistance;
+    double dr_dpz = vector_base_to_ee_B(2)/hip2FootDistance;
+    double dthetax_dpx = theta_coeff*dr_dpx;
+    double dthetax_dpz = theta_coeff*dr_dpx;
 
-    jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1-coeff2)*JacPosBWrtNodes.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
+    double da_dpx = -sin(thetax + legPitchAngle)*(dlegPitchAngle_dpx + dthetax_dpx);
+    double da_dpz = -sin(thetax + legPitchAngle)*(dlegPitchAngle_dpz + dthetax_dpz);
+    double dc_dpx = cos(thetax + legPitchAngle)*(dlegPitchAngle_dpx + dthetax_dpx);
+    double dc_dpz = cos(thetax + legPitchAngle)*(dlegPitchAngle_dpz + dthetax_dpz);
+    double dd_dpx = d_coeff;
+    double dd_dpz = d_coeff;
+    jac.middleRows(row_reset++, 1) = (da_dpx*f(0)+dc_dpx*f(2)-dd_dpx)*JacPosBWrtNodes.row(0) + (da_dpz*f(0)+dc_dpz*f(2)-dd_dpz)*JacPosBWrtNodes.row(2);
+    //jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1-coeff2)*JacPosBWrtNodes.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
     
   }
 
@@ -478,7 +542,7 @@ Eigen::Vector3d ForcePolytopeConstraint::ComputeBasetoEEB (double time) const
 }
 void ForcePolytopeConstraint::InitializeQuantities (const KinematicModel::Ptr& robot_model, double ee) 
 {
-  
+  std::cout<<"leg N. "<<ee<<std::endl;
   coeffL_.resize(4);
   Eigen::MatrixXd pp=robot_model->GetThetaL();
   coeffL_=robot_model->GetThetaL().col(ee);
