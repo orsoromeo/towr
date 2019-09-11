@@ -58,6 +58,7 @@ public:
   KinematicModel (int n_ee)
   {
     nominal_stance_.resize(n_ee);
+    base2hip_distance_.resize(n_ee);
     max_dev_from_nominal_.setZero();
     ThetaL_.resize(4,4);
     ThetaN_.resize(4,4);
@@ -79,6 +80,15 @@ public:
   virtual EEPos GetNominalStanceInBase() const
   {
     return nominal_stance_;
+  }
+
+    /**
+   * @brief  The xyz-position [m] of each foot in default stance.
+   * @returns The vector from base to each foot expressed in the base frame.
+   */
+  virtual EEPos GetDistanceBaseToHip() const
+  {
+    return base2hip_distance_;
   }
 
   /**
@@ -131,6 +141,7 @@ public:
   }
 protected:
   EEPos nominal_stance_;
+  EEPos base2hip_distance_;
   Vector3d max_dev_from_nominal_;
   public:
   Eigen::MatrixXd ThetaL_;

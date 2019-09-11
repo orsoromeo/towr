@@ -98,6 +98,7 @@ private:
   
   Eigen::Vector3d max_deviation_from_nominal_;
   Eigen::Vector3d nominal_ee_pos_B_;
+  Eigen::Vector3d base_to_hip_distance;
   NodeSpline::Ptr base_linear_;     ///< the linear position of the base.
   EulerConverter base_angular_;
   NodesVariablesPhaseBased::Ptr ee_force_;  ///< the current xyz foot forces.
@@ -110,6 +111,7 @@ private:
   EE ee_;                  ///< The endeffector force to be constrained.
   NodeSpline::Ptr ee_force_node_;
   NodeSpline::Ptr ee_motion_node_;
+
   Eigen::Vector3d ComputeBasetoEEB (double time) const;
   double ComputeBoundL (double coeff0, double coeff1, double Posx, double Pn,double ls) const;
   double ComputeBoundR (double coeff0, double coeff1, double Posx, double Pn,double rs) const;

@@ -44,6 +44,7 @@ ForcePolytopeConstraint::ForcePolytopeConstraint (const KinematicModel::Ptr& rob
 {
   max_deviation_from_nominal_ = robot_model->GetMaximumDeviationFromNominal();
   nominal_ee_pos_B_           = robot_model->GetNominalStanceInBase().at(ee);
+  base_to_hip_distance           = robot_model->GetDistanceBaseToHip().at(ee);
   base_linear_  = spline.base_linear_;
   base_angular_ = EulerConverter(spline.base_angular_);
   terrain_ = terrain;
@@ -99,7 +100,13 @@ ForcePolytopeConstraint::GetValues () const
     Vector3d f = force_nodes.at(f_node_id).p();  
 
     Vector3d vector_base_to_ee_B=ComputeBasetoEEB(time);
-  
+    double baseToHipX = vector_base_to_ee_B(0) - base_to_hip_distance(0);
+    double baseToHipZ = vector_base_to_ee_B(2) - base_to_hip_distance(2);
+    std::cout<<baseToHipX<<" "<<baseToHipZ<<std::endl;
+    double squaredHip2FootDistance = pow(baseToHipX, 2) + pow(baseToHipZ, 2);
+    double hip2FootDistance = sqrt(squaredHip2FootDistance);
+    double legPitchAngle = atan2(baseToHipZ, baseToHipX);
+
     double right_side=nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0);
     double left_side=nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0);
     int j;
@@ -110,18 +117,24 @@ ForcePolytopeConstraint::GetValues () const
        if (vector_base_to_ee_B(0)>nominal_ee_pos_B_(0)) 
      {
       thetax=ComputeBoundR(coeffN_(j),coeffR_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), right_side); 
-      f_polytope(0,j)=cos(thetax);
-      f_polytope(2,j)=sin(thetax);
+      //f_polytope(0,j)=cos(thetax);
+      //f_polytope(2,j)=sin(thetax);
       d_polytope(j)=ComputeBoundR(coeffDN_(j),coeffDR_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), right_side);
      }
       else 
     {
        thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), left_side); 
-       f_polytope(0,j)=cos(thetax);
-       f_polytope(2,j)=sin(thetax);
+      //f_polytope(0,j)=cos(thetax);
+      //f_polytope(2,j)=sin(thetax);
        d_polytope(j)=ComputeBoundL(coeffDL_(j), coeffDN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), left_side);
     }
    }
+  
+  //f_polytope(0,j)=cos(thetax);
+  //f_polytope(2,j)=sin(thetax);
+  f_polytope(0,j)=cos(legPitchAngle)*cos(thetax) - sin(legPitchAngle)*sin(thetax); //f_polytope(0,j)=cos(thetax + legPitchAngle);
+  f_polytope(2,j)=sin(legPitchAngle)*cos(thetax) + cos(legPitchAngle)*sin(thetax); //f_polytope(2,j)=cos(thetax + legPitchAngle);
+
     f_polytope(1,4)=1;
     f_polytope(1,5)=-1;
     
@@ -213,6 +226,8 @@ ForcePolytopeConstraint::FillJacobianBlock (std::string var_set,
 
 
     jac.middleRows(row_reset++, 1) = ((-sin(thetax)*f(0)+cos(thetax)*f(2))*coeff1-coeff2)*JacPosBWrtBaseLin.row(0); //+ JacPosBWrtBaseLin.row(1)+JacPosBWrtBaseLin.row(2);
+    std::cout<<"JacPosBWrtBaseLin row 0"<<JacPosBWrtBaseLin.row(0)<<std::endl;
+    std::cout<<"jac.middleRows(row_reset++, 1)"<<JacPosBWrtBaseLin.row(0)<<std::endl;
   }
 
     row += n_constraints_per_node_;

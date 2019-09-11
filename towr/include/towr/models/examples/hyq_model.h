@@ -52,6 +52,15 @@ public:
     nominal_stance_.at(LH) << -x_nominal_b,   y_nominal_b, z_nominal_b;
     nominal_stance_.at(RH) << -x_nominal_b,  -y_nominal_b, z_nominal_b;
 
+    const double x_base2hip_distance_ = 0.36743;
+    const double y_base2hip_distance_ = 0.3272;
+    const double z_base2hip_distance_ = 0.0;
+
+    base2hip_distance_.at(LF) <<  x_base2hip_distance_,   y_base2hip_distance_, z_base2hip_distance_;
+    base2hip_distance_.at(RF) <<  x_base2hip_distance_,  -y_base2hip_distance_, z_base2hip_distance_;
+    base2hip_distance_.at(LH) << -x_base2hip_distance_,   y_base2hip_distance_, z_base2hip_distance_;
+    base2hip_distance_.at(RH) << -x_base2hip_distance_,  -y_base2hip_distance_, z_base2hip_distance_;
+
     max_dev_from_nominal_ << 0.25, 0.10, 0.06;
     //ThetaL_<<1.07, 1.07, 2.31, 2.31, 3.96, 3.96, -0.82, -0.82, -0.0129, -0.0129, 3.154, 3.154, 3.12, 3.12, 0.0129, 0.0129;
 
@@ -61,9 +70,9 @@ public:
     //ThetaR_<<0.82, 0.82, 2.31, 2.31, 3.96, 3.96, -0.82, -0.82, -0.0129, -0.0129, 3.154, 3.154, 3.12, 3.12, 0.0129, 0.0129;
     //Theta_cost_<<1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
     
-    coeffDL_<<300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300;
-    coeffDN_<<300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300;
-    coeffDR_<<300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300;
+    coeffDL_<<500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500;
+    coeffDN_<<500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500;
+    coeffDR_<<500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500;
 
     //coeffDL_<<300, 300, 300, 300, 300, 300, 300, 300, 212, 212, 212, 212, 212, 212, 212, 212;
     //coeffDN_<<300, 300, 300, 300, 300, 300, 300, 300, 212, 212, 212, 212, 212, 212, 212, 212;
