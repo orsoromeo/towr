@@ -77,7 +77,7 @@ void
 QuadrupedGaitGenerator::SetCombo (Combos combo)
 {
   switch (combo) {
-    case C6: SetGaits({Stand, Walk1, Walk1, Stand}); break;
+    case C6: SetGaits({Stand, Walk1, Walk1, Walk1, Stand}); break;
     //case C6: SetGaits({Stand, Walk1, Walk1, Walk1, Stand}); break; // overlap-walk
     case C0: SetGaits({Stand, Walk1, Stand}); break;
     case C1: SetGaits({Stand, Walk1, Stand}); break;
