@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <memory>
 #include <vector>
-
+#include <iostream>
 #include <Eigen/Dense>
 
 namespace towr {
@@ -59,6 +59,15 @@ public:
   {
     nominal_stance_.resize(n_ee);
     max_dev_from_nominal_.setZero();
+    ThetaL_.resize(4,4);
+    ThetaN_.resize(4,4);
+    ThetaR_.resize(4,4);
+    Theta_cost_.resize(2,4);
+    coeffDL_.resize(4,4);
+    coeffDN_.resize(4,4);
+    coeffDR_.resize(4,4);
+    
+
   }
 
   virtual ~KinematicModel () = default;
@@ -88,12 +97,55 @@ public:
   {
     return nominal_stance_.size();
   }
-
+  Eigen::MatrixXd GetThetaL () const
+  { 
+    return ThetaL_;
+  }
+  Eigen::MatrixXd GetThetaN () const
+  {
+    return ThetaN_;
+  }
+  Eigen::MatrixXd GetThetaR () const
+  {
+    return ThetaR_;
+  }
+  Eigen::MatrixXd GetThetaCost () const
+  {
+    return Theta_cost_;
+  }
+  Eigen::MatrixXd GetDL () const
+  {
+    return coeffDL_;
+  }
+  Eigen::MatrixXd GetDN () const
+  {
+    return coeffDN_;
+  }
+  Eigen::MatrixXd GetDR () const
+  {
+    return coeffDR_;
+  }
+  Eigen::VectorXd GetDCost () const
+  {
+    return coeffDcost_;
+  }
 protected:
   EEPos nominal_stance_;
   Vector3d max_dev_from_nominal_;
+  public:
+  Eigen::MatrixXd ThetaL_;
+  Eigen::MatrixXd ThetaN_;
+  Eigen::MatrixXd ThetaR_;
+  Eigen::MatrixXd Theta_cost_;
+  Eigen::MatrixXd coeffDL_;
+  Eigen::MatrixXd coeffDN_;
+  Eigen::MatrixXd coeffDR_;
+  Eigen::Vector2d coeffDcost_;
+
+
 };
 
 } /* namespace towr */
+
 
 #endif /* TOWR_MODELS_KINEMATIC_MODEL_H_ */

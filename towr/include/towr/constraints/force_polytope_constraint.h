@@ -27,8 +27,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
-#ifndef TOWR_CONSTRAINTS_FORCE_CONSTRAINT_H_
-#define TOWR_CONSTRAINTS_FORCE_CONSTRAINT_H_
+#ifndef TOWR_CONSTRAINTS_FORCE_POLYTOPE_CONSTRAINT_H_
+#define TOWR_CONSTRAINTS_FORCE_POLYTOPE_CONSTRAINT_H_
 #include <towr/variables/spline.h>
 
 #include <ifopt/constraint_set.h>
@@ -56,7 +56,7 @@ namespace towr {
  *
  * @ingroup Constraints
  */
-class ForceConstraint : public ifopt::ConstraintSet {
+class ForcePolytopeConstraint : public ifopt::ConstraintSet {
 public:
   using Vector3d = Eigen::Vector3d;
   using EE = uint;
@@ -67,13 +67,13 @@ public:
    * @param force_limit_in_normal_direction  Maximum pushing force [N].
    * @param endeffector_id Which endeffector force should be constrained.
    */
-  ForceConstraint (const KinematicModel::Ptr& robot_model,
+  ForcePolytopeConstraint (const KinematicModel::Ptr& robot_model,
                    const HeightMap::Ptr& terrain,
                    double force_limit_in_normal_direction,
                    EE endeffector_id,
                   const SplineHolder& spline_holder
                    );
-  virtual ~ForceConstraint () = default;
+  virtual ~ForcePolytopeConstraint () = default;
 
   void InitVariableDependedQuantities(const VariablesPtr& x) override;
 
@@ -110,6 +110,12 @@ private:
   EE ee_;                  ///< The endeffector force to be constrained.
   NodeSpline::Ptr ee_force_node_;
   NodeSpline::Ptr ee_motion_node_;
+  Eigen::Vector3d ComputeBasetoEEB (double time) const;
+  double ComputeBoundL (double coeff0, double coeff1, double Posx, double Pn,double ls) const;
+  double ComputeBoundR (double coeff0, double coeff1, double Posx, double Pn,double rs) const;
+  double ComputeCoeffForJacL (double coeff0, double coeff1, double Pn,double ls) const;
+  double ComputeCoeffForJacR (double coeff0, double coeff1, double Pn,double rs) const;
+void InitializeQuantities (const KinematicModel::Ptr& robot_model,double ee);
 
   /**
    * The are those Hermite-nodes that shape the polynomial during the

@@ -41,9 +41,9 @@ Parameters::Parameters ()
 {
   // constructs optimization variables
   duration_base_polynomial_ = 0.1;
-  force_polynomials_per_stance_phase_ = 3;
-  ee_polynomials_per_swing_phase_ = 3; // so step can at least lift leg
-  //ee_polynomials_per_swing_phase_=2;
+  force_polynomials_per_stance_phase_ = 5;
+  ee_polynomials_per_swing_phase_ = 2; // so step can at least lift leg
+  //ee_polynomials_per_swing_phase_=3;
   // parameters related to specific constraints (only used when it is added as well)
   force_limit_in_normal_direction_ = 1000;
   dt_constraint_range_of_motion_ = 0.08;
@@ -59,12 +59,15 @@ Parameters::Parameters ()
   constraints_.push_back(EndeffectorRom); //Ensures that the range of motion is respected at discrete times.
   constraints_.push_back(Force); // ensures unilateral forces and inside the friction cone.
   constraints_.push_back(Swing); // creates smoother swing motions, not absolutely required.
+  //constraints_.push_back(ForcePolytope); 
+  
   //constraints_.push_back(BaseAccConstraintValueLin);//accelerations are buonded
   //constraints_.push_back(BaseAccConstraintValueAng);//accelerations are buonded
 
   // optional costs to e.g penalize endeffector forces
   // costs_.push_back({ForcesCostID, 1.0}); //weighed by 1.0 relative to other costs
-  //costs_.push_back({EEMotionCostID, 1.0}); //weighed by 1.0 relative to other costs
+  // costs_.push_back({EEMotionCostID, 1.0}); //weighed by 1.0 relative to other costs
+
 
   // bounds on final 6DoF base state
   bounds_final_lin_pos_ = {X,Y};

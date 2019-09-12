@@ -47,20 +47,26 @@ RangeOfMotionConstraint::RangeOfMotionConstraint (const KinematicModel::Ptr& mod
 
   max_deviation_from_nominal_ = model->GetMaximumDeviationFromNominal();
   nominal_ee_pos_B_           = model->GetNominalStanceInBase().at(ee);
+ 
   ee_ = ee;
   terrain_ = terrain;
+
   theta_=37*M_PI/180;
   lenght_=0.3;
+
   HeightToCheck_= lenght_*sin(theta_);
   //SetRows(GetNumberOfNodes()*k3D);
   SetRows(GetNumberOfNodes()*6);
+
 }
 
 int
 RangeOfMotionConstraint::GetRow (int node, int dim) const
 {
+
   return node*6 + dim;
   //return node*k3D + dim;
+
 }
 
 void
@@ -75,6 +81,7 @@ RangeOfMotionConstraint::UpdateConstraintAtInstance (double t, int k, VectorXd& 
 
   g.middleRows(GetRow(k, X), k3D) = vector_base_to_ee_B;
   int a=GetRow(k,3);
+
   if (ee_<2) //quando scende deve essere cambiato
   {  
     Vector3d one=Vector3d(1.0, 1.0,1.0);
@@ -90,6 +97,7 @@ RangeOfMotionConstraint::UpdateConstraintAtInstance (double t, int k, VectorXd& 
     g.coeffRef(a+1,0) = pos_ee_W(2) + HeightToCheck_/3 -   terrain_->GetHeight(pos_ee_W(0)+(x_projection/3.), pos_ee_W(1)+y_projection/3.);
     g.coeffRef(a+2,0) = pos_ee_W(2) + HeightToCheck_*2/3 - terrain_->GetHeight(pos_ee_W(0)+2.*x_projection/3., pos_ee_W(1)+2*y_projection/3.);
   }
+
   
 
 }
@@ -112,6 +120,7 @@ RangeOfMotionConstraint::UpdateBoundsAtInstance (double t, int k, VecBound& boun
  
     bounds.at(GetRow(k,dim)) = b;
   }
+
    bounds.at(GetRow(k,3)) = ifopt::Bounds (0.02, 100);
    bounds.at(GetRow(k,4)) = ifopt::Bounds (0.02, 100);
    bounds.at(GetRow(k,5)) = ifopt::Bounds (0.02, 100);
@@ -148,6 +157,7 @@ RangeOfMotionConstraint::UpdateJacobianAtInstance (double t, int k,
 
   if (var_set == id::EEMotionNodes(ee_)) {
     jac.middleRows(row_start, k3D) = b_R_w*ee_motion_->GetJacobianWrtNodes(t,kPos);
+
     Vector3d pos_ee_W = ee_motion_->GetPoint(t).p();
     if (ee_<2)
     {
@@ -163,6 +173,7 @@ RangeOfMotionConstraint::UpdateJacobianAtInstance (double t, int k,
      jac.middleRows(row_start+5,0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+x_projection/3., pos_ee_W(1)+y_projection/3.);
     }
   }
+
 
   if (var_set == id::EESchedule(ee_)) {
     jac.middleRows(row_start, k3D) = b_R_w*ee_motion_->GetJacobianOfPosWrtDurations(t);

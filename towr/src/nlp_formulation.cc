@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr/constraints/base_motion_constraint.h>
 #include <towr/constraints/dynamic_constraint.h>
 #include <towr/constraints/force_constraint.h>
+#include <towr/constraints/force_polytope_constraint.h>
 #include <towr/constraints/range_of_motion_constraint.h>
 #include <towr/constraints/swing_constraint.h>
 #include <towr/constraints/terrain_constraint.h>
@@ -179,7 +180,8 @@ NlpFormulation::MakeForceVariables () const
                                               params_.GetPhaseCount(ee),
                                               params_.ee_in_contact_at_start_.at(ee),
                                               id::EEForceNodes(ee),
-                                              params_.force_polynomials_per_stance_phase_);
+                                              params_.force_polynomials_per_stance_phase_
+                                              );
 
     // initialize with mass of robot distributed equally on all legs
     double m = model_.dynamic_model_->m();
@@ -248,7 +250,8 @@ NlpFormulation::GetConstraint (Parameters::ConstraintName name,
     case Parameters::BaseRom:                     return MakeBaseRangeOfMotionConstraint(s);
     case Parameters::TotalTime:                   return MakeTotalTimeConstraint();
     case Parameters::Terrain:                     return MakeTerrainConstraint();
-    case Parameters::Force:                       return MakeForceConstraint();
+    case Parameters::Force:                       return MakeForceConstraint(s);
+    case Parameters::ForcePolytope:                       return MakeForcePolytopeConstraint(s);
     case Parameters::Swing:                       return MakeSwingConstraint();
     case Parameters::BaseAcc:                     return MakeBaseAccConstraint(s);
     case Parameters::BaseAccConstraintValueLin:   return MakeBaseAccConstraintValueLin(s,nlp);
@@ -322,17 +325,34 @@ NlpFormulation::MakeTerrainConstraint () const
 }
 
 NlpFormulation::ContraintPtrVec
-NlpFormulation::MakeForceConstraint () const
+NlpFormulation::MakeForceConstraint (const SplineHolder& s) const
 {
   ContraintPtrVec constraints;
-
+  if (params_.GetEECount()>2) {
   for (int ee=0; ee<params_.GetEECount(); ee++) {
-    auto c = std::make_shared<ForceConstraint>(terrain_,
+    auto c = std::make_shared<ForceConstraint>(model_.kinematic_model_,
+                                               terrain_,
                                                params_.force_limit_in_normal_direction_,
-                                               ee);
+                                               ee, s);
     constraints.push_back(c);
   }
+  }
+  return constraints;
+}
 
+NlpFormulation::ContraintPtrVec
+NlpFormulation::MakeForcePolytopeConstraint (const SplineHolder& s) const
+{
+  ContraintPtrVec constraints;
+  if (params_.GetEECount()>2) {
+  for (int ee=0; ee<params_.GetEECount(); ee++) {
+    auto c = std::make_shared<ForcePolytopeConstraint>(model_.kinematic_model_,
+                                               terrain_,
+                                               params_.force_limit_in_normal_direction_,
+                                               ee, s);
+    constraints.push_back(c);
+  }
+  }
   return constraints;
 }
 
@@ -359,7 +379,12 @@ NlpFormulation::MakeBaseAccConstraint (const SplineHolder& s) const
 
   constraints.push_back(std::make_shared<SplineAccConstraint>
                         (s.base_angular_, id::base_ang_nodes));
-
+  int e=params_.GetEECount();
+  //if (e>2){
+  //for (int ee=0; ee<params_.GetEECount(); ee++) {
+  //constraints.push_back(std::make_shared<SplineAccConstraintFoot>
+  //                      (s.ee_motion_.at(ee), id::EEMotionNodes(ee)));}}
+//
   return constraints;
 }
 NlpFormulation::ContraintPtrVec

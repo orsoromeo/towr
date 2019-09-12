@@ -260,7 +260,7 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   // to publish entire trajectory (e.g. to send to controller)
   xpp_msgs::RobotStateCartesianTrajectory xpp_msg = xpp::Convert::ToRos(GetTrajectory());
 
-  dwl_msgs::WholeBodyTrajectory wbtraj = ToRos();
+  //dwl_msgs::WholeBodyTrajectory wbtraj = ToRos();
 
   trajectory_.publish(xpp_msg);
   
@@ -269,7 +269,8 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   std::cin>>a;
   if(a=='y'){
     std::cout<<"New trajectory being published."<<std::endl;
-    dwltrajectory_.publish(wbtraj);
+    ToRosAndPublish();
+    //dwltrajectory_.publish(wbtraj);
   }else{
     if(a=='n'){  
       std::cout<<"New trajectory will not be published."<<std::endl;
@@ -513,6 +514,138 @@ TowrRosInterface::SaveTrajectoryInRosbag (rosbag::Bag& bag,
   }
 }
 
+void TowrRosInterface::ToRosAndPublish()
+{
+
+
+  //planned_wt.resize(solution.base_linear_->GetTotalTime()/0.04);
+  auto base_angular=EulerConverter(solution.base_angular_);
+  double speed_factor=0.5;
+  double sampling_time=0.004*speed_factor;
+
+  Eigen::MatrixXd oldFootPosDesWF(3,4);
+  Eigen::MatrixXd oldFootVelDesWF(3,4);
+  oldFootVelDesWF.setZero();
+  ros::Rate loop_rate_(250.0);
+  for(int ee=0; ee<solution.ee_motion_.size(); ee++){
+  oldFootPosDesWF.col(ee) = formulation_.initial_ee_W_.at(ee);
+  }
+  
+  for(int i=0; i<solution.base_linear_->GetTotalTime()/sampling_time; i++)
+  {
+    dwl_msgs::WholeBodyTrajectory planned_wt;
+    double t=i*sampling_time;
+    dwl_msgs::WholeBodyState planned_wbs_msg;
+    for(int ee=0; ee<solution.ee_motion_.size(); ee++)
+    {
+      dwl_msgs::ContactState contact;
+      Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(t);
+      //Eigen::Vector3d footPosDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).p()-solution.base_linear_->GetPoint(t).p());
+      Eigen::Vector3d footPosDesWF = solution.ee_motion_.at(ee)->GetPoint(t).p();
+      contact.position.x = footPosDesWF(0) - solution.ee_motion_.at(ee)->GetPoint(0.0).p().x();
+      contact.position.y = footPosDesWF(1) - solution.ee_motion_.at(ee)->GetPoint(0.0).p().y();
+      contact.position.z = footPosDesWF(2) - solution.ee_motion_.at(ee)->GetPoint(0.0).p().z(); 
+      //Eigen::Vector3d footVelDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).v() - solution.base_linear_->GetPoint(t).v());
+      Eigen::Vector3d footVelDesWF = solution.ee_motion_.at(ee)->GetPoint(t).v()*speed_factor;
+      //Eigen::Vector3d footVelDesWF = (footPosDesWF - oldFootPosDesWF.col(ee))/sampling_time;
+      contact.velocity.x = footVelDesWF(0);
+      contact.velocity.y = footVelDesWF(1);
+      contact.velocity.z = footVelDesWF(2);
+      oldFootPosDesWF.col(ee) = footPosDesWF;
+
+      //Eigen::Vector3d footAccDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).a() - solution.base_linear_->GetPoint(t).a());
+      Eigen::Vector3d footAccDesWF = solution.ee_motion_.at(ee)->GetPoint(t).a();
+      //Eigen::Vector3d footAccDesWF = (footVelDesWF - oldFootVelDesWF.col(ee))/sampling_time;
+      contact.acceleration.x = footAccDesWF(0)*pow(speed_factor,2);
+      contact.acceleration.y = footAccDesWF(1)*pow(speed_factor,2);
+      contact.acceleration.z = footAccDesWF(2)*pow(speed_factor,2);
+      oldFootVelDesWF.col(ee) = footVelDesWF;
+      switch(ee)
+      {
+       case 0: contact.name = "01_lf_foot"; break;
+       case 1: contact.name = "02_rf_foot"; break;
+       case 2: contact.name = "03_lh_foot"; break;
+       case 3: contact.name = "04_rh_foot"; break;
+      }
+      if(solution.phase_durations_.at(ee)->IsContactPhase(t))
+      {
+       contact.wrench.force.x=100;
+       contact.wrench.force.y=100;
+       contact.wrench.force.z=100;
+      }
+      else
+      {
+        contact.wrench.force.x=0;
+        contact.wrench.force.y=0;
+        contact.wrench.force.z=0;
+      }
+      //if (i=0)
+      //{std::cout<<footPosDesCoM.transpose()<<std::endl;}
+    planned_wbs_msg.contacts.push_back(contact);
+    }
+
+    //unsigned int contact_counter = 1;
+
+    //std::cout<<"i am here1"<<std::endl;
+    auto pos=solution.base_angular_->GetPoint(t).p();
+    auto vel=base_angular.GetAngularVelocityInWorld(t);
+    auto accel=base_angular.GetAngularAccelerationInWorld(t);
+    for(int base=0; base<3; base++)
+    {
+      dwl_msgs::BaseState base_state;
+      base_state.name="floating_base";
+      base_state.position =pos(base);
+      base_state.velocity =vel(base)*speed_factor;
+      base_state.acceleration=accel(base)*pow(speed_factor,2);
+      switch(base)
+      {
+       case 0: base_state.id = base_state.AX; break;
+       case 1: base_state.id = base_state.AY; break;
+       case 2: base_state.id = base_state.AZ; break;
+      }
+      planned_wbs_msg.base.push_back(base_state);
+    }
+    Eigen::Vector3d pos_lin=solution.base_linear_->GetPoint(t).p()-solution.base_linear_->GetPoint(0.0).p();
+    //std::cout << "t=" << t << "\n";
+    //std::cout<<solution.base_linear_->GetPoint(t).p()<<std::endl;
+    //std::cout<<" "<<std::endl;
+    //std::cout<<solution.base_linear_->GetPoint(0).p()<<std::endl;
+    //std::cout<<" "<<std::endl;
+    //std::cout<<"sottrazione "<<std::endl;
+    //std::cout<<solution.base_linear_->GetPoint(t).p()-solution.base_linear_->GetPoint(0).p()<<std::endl;
+    //std::cout<<"pos_lin"<<std::endl;
+    //std::cout<<pos_lin<<std::endl;
+
+    auto vel_lin=solution.base_linear_->GetPoint(t).v();;
+    auto acc_lin=solution.base_linear_->GetPoint(t).a();
+    for(int base=0; base<3; base++)
+    {
+      dwl_msgs::BaseState base_state;
+      base_state.name="floating_base";
+      base_state.position =pos_lin(base);
+      base_state.velocity =vel_lin(base)*speed_factor;
+      base_state.acceleration=acc_lin(base)*pow(speed_factor,2);
+      switch(base)
+      {
+       case 0: base_state.id = base_state.LX; break;
+       case 1: base_state.id = base_state.LY; break;
+       case 2: {
+                base_state.id = base_state.LZ;
+                //base_state.position += foot_radius_;
+                break;}
+      }
+      planned_wbs_msg.base.push_back(base_state);
+
+    }
+    planned_wt.trajectory.push_back(planned_wbs_msg);
+
+    dwltrajectory_.publish(planned_wt);
+    loop_rate_.sleep();
+
+  }
+  
+}
+
 dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
 {
   dwl_msgs::WholeBodyTrajectory planned_wt;
@@ -555,8 +688,8 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
       Eigen::Vector3d footAccDesWF = solution.ee_motion_.at(ee)->GetPoint(t).a();
       //Eigen::Vector3d footAccDesWF = (footVelDesWF - oldFootVelDesWF.col(ee))/sampling_time;
       contact.acceleration.x = footAccDesWF(0)*pow(speed_factor,2);
-      contact.acceleration.y = footAccDesWF(0)*pow(speed_factor,2);
-      contact.acceleration.z = footAccDesWF(0)*pow(speed_factor,2);
+      contact.acceleration.y = footAccDesWF(1)*pow(speed_factor,2);
+      contact.acceleration.z = footAccDesWF(2)*pow(speed_factor,2);
       oldFootVelDesWF.col(ee) = footVelDesWF;
       switch(ee)
       {
