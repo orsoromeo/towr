@@ -150,7 +150,7 @@ private:
                                const std::vector<xpp::RobotStateCartesian>& traj,
                                const std::string& topic) const;
 
-  dwl_msgs::WholeBodyTrajectory ToRos();
+  void ToRos();
   void ToRosAndPublish();
 
 };

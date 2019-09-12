@@ -328,8 +328,10 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
       nlp_.AddCostSet(c);
 
     solver_->Solve(nlp_);
-    SaveOptimizationAsRosbag(bag_file, robot_params_msg, msg,false);
-        // int success1 = system (("mv"+ bag_file + " ~/catkin_ws/bag_files")c_str()); //hyq_furious 
+    SaveOptimizationAsRosbag(bag_file, robot_params_msg, msg, false);
+        // int success1 = system (("mv"+ bag_file + " ~/catkin_ws/bag_files")c_str()); //hyq_furious
+
+    ToRos();
 
 
   }
@@ -350,7 +352,7 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
   // to publish entire trajectory (e.g. to send to controller)
   xpp_msgs::RobotStateCartesianTrajectory xpp_msg = xpp::Convert::ToRos(GetTrajectory());
 
-  dwl_msgs::WholeBodyTrajectory wbtraj = ToRos();
+  dwl_msgs::WholeBodyTrajectory wbtraj;
 
   trajectory_.publish(xpp_msg);
   if (msg.optimize){
@@ -644,9 +646,18 @@ void TowrRosInterface::ToRosAndPublish()
   
 }
 
-dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
+void TowrRosInterface::ToRos()
 {
-  dwl_msgs::WholeBodyTrajectory planned_wt;
+
+  time_t ct;
+  ct = time(NULL);
+  struct tm *localTime = localtime(&ct);
+  char buffer [80];
+  strftime(buffer, 80, "%d-%m-%Y-%H-%M-%S", localTime);
+  std::string bag_file_name = "whole-body-trajectory-" + std::string(buffer)+ ".bag";
+  rosbag::Bag bag;
+  bag.open(bag_file_name, rosbag::bagmode::Write);
+  const std::string wb_topic = "hyq/plan";
 
   //planned_wt.resize(solution.base_linear_->GetTotalTime()/0.04);
   auto base_angular=EulerConverter(solution.base_angular_);
@@ -663,7 +674,9 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
   for(int i=0; i<solution.base_linear_->GetTotalTime()/sampling_time; i++)
   {
 
-    double t=i*sampling_time;
+    dwl_msgs::WholeBodyTrajectory planned_wt;
+
+    double t=(double)i*sampling_time;
     dwl_msgs::WholeBodyState planned_wbs_msg;
     for(int ee=0; ee<solution.ee_motion_.size(); ee++)
     {
@@ -766,7 +779,12 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
       planned_wbs_msg.base.push_back(base_state);
 
     }
-    planned_wt.trajectory.push_back(planned_wbs_msg);}
+    planned_wt.trajectory.push_back(planned_wbs_msg);
+    
+    //timestamp = t;
+    auto timestamp = ::ros::Time(t + 1e-6);
+    bag.write(wb_topic, timestamp, planned_wt);
+    }
     //double t = 0.0;
     //        while (t<=solution.base_linear_->GetTotalTime() + 1e-5)
     //         {
@@ -788,7 +806,9 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
 
 
     ////std::cout<<"i am here2"<<std::endl;
-    return planned_wt;
+    bag.close();
+
+    //return planned_wt;
   
 }
 
