@@ -517,8 +517,6 @@ TowrRosInterface::SaveTrajectoryInRosbag (rosbag::Bag& bag,
 void TowrRosInterface::ToRosAndPublish()
 {
 
-
-  //planned_wt.resize(solution.base_linear_->GetTotalTime()/0.04);
   auto base_angular=EulerConverter(solution.base_angular_);
   double speed_factor=0.5;
   double sampling_time=0.004*speed_factor;
