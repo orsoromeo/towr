@@ -121,7 +121,7 @@ public:
     // solver_->SetOption("derivative_test", "first-order");
 
     solver_->SetOption("max_cpu_time", 150.0);
-    solver_->SetOption("tol", 0.001);
+    //solver_->SetOption("tol", 0.001);
     solver_->SetOption("print_level", 5);
 
     if (msg.play_initialization)

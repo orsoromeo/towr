@@ -532,7 +532,7 @@ void TowrRosInterface::ToRosAndPublish()
   for(int i=0; i<solution.base_linear_->GetTotalTime()/sampling_time; i++)
   {
     dwl_msgs::WholeBodyTrajectory planned_wt;
-    double t=i*sampling_time;
+    double t=(double)i*sampling_time;
     dwl_msgs::WholeBodyState planned_wbs_msg;
     for(int ee=0; ee<solution.ee_motion_.size(); ee++)
     {
