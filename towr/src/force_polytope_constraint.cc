@@ -111,8 +111,8 @@ ForcePolytopeConstraint::GetValues () const
     std::cout<<"legs pitch angle is"<<legPitchAngle<<std::endl;
 
     double nominalHip2FootDistance = 0.55;
-    double max_extension=nominalHip2FootDistance + 0.1;
-    double max_retraction=nominalHip2FootDistance - 0.1;
+    double max_extension=nominalHip2FootDistance + 0.2;
+    double max_retraction=nominalHip2FootDistance - 0.2;
     
     double thetax=0;
 
@@ -120,18 +120,34 @@ ForcePolytopeConstraint::GetValues () const
     for (int j=0; j<halfspacesNumber; j++)
     {
 
-    if (hip2FootDistance>nominalHip2FootDistance) {
+      if ((hip2FootDistance>nominalHip2FootDistance)&&(hip2FootDistance<=max_extension)) {
+        std::cout<<" hip2FootDistance is in the lower half (leg is extended) "<<std::endl;
       //{ComputeBoundR (double coeff0, double coeff1, double Posx, double Pn,double rs)
         //bound=(Posx-Pn)*(coeff1-coeff0)/(rs-Pn)+coeff0;
       thetax=ComputeBoundR(coeffN_(j), coeffR_(j), hip2FootDistance, nominalHip2FootDistance, max_extension); 
       d_polytope(j)=ComputeBoundR(coeffDN_(j),coeffDR_(j), hip2FootDistance, nominalHip2FootDistance, max_extension);
-     }
-      else 
-    {
+     }else{
+        if ((hip2FootDistance<nominalHip2FootDistance)&&(hip2FootDistance>=max_retraction)){
+          std::cout<<" hip2FootDistance is in the upper half (leg is retracted)"<<std::endl;
        thetax=ComputeBoundL(coeffL_(j), coeffN_(j), hip2FootDistance, nominalHip2FootDistance, max_retraction);
        //ForcePolytopeConstraint::ComputeBoundL (double coeff0, double coeff1,  double Posx, double Pn,double ls) const
        //bound=(Posx-ls)*(coeff1-coeff0)/(Pn-ls)+coeff0;
        d_polytope(j)=ComputeBoundL(coeffDL_(j), coeffDN_(j), hip2FootDistance, nominalHip2FootDistance, max_retraction);
+        }else{
+        if(hip2FootDistance<max_retraction){
+          std::cout<<" hip2FootDistance reached the upper limit (max leg retraction)"<<std::endl;
+        thetax=ComputeBoundL(coeffL_(j), coeffN_(j), hip2FootDistance, max_retraction, max_retraction);
+        //ForcePolytopeConstraint::ComputeBoundL (double coeff0, double coeff1,  double Posx, double Pn,double ls) const
+        //bound=(Posx-ls)*(coeff1-coeff0)/(Pn-ls)+coeff0;
+         d_polytope(j)=ComputeBoundL(coeffDL_(j), coeffDN_(j), max_retraction, nominalHip2FootDistance, max_retraction);
+        }else{
+          if(hip2FootDistance>max_extension){
+            std::cout<<" hip2FootDistance reached the lower limit (max leg exstension)"<<std::endl;
+          thetax=ComputeBoundR(coeffN_(j), coeffR_(j), hip2FootDistance, max_extension, max_extension); 
+          d_polytope(j)=ComputeBoundR(coeffDN_(j),coeffDR_(j), max_extension, nominalHip2FootDistance, max_extension);
+          }
+        }
+      }
     }
    
     std::cout<<"theta x is "<<thetax<<" and d is "<< d_polytope(j) <<std::endl;
