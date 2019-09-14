@@ -113,10 +113,12 @@ private:
   NodeSpline::Ptr ee_motion_node_;
 
   Eigen::Vector3d ComputeBasetoEEB (double time) const;
-  double ComputeBoundL (double coeff0, double coeff1, double Posx, double Pn,double ls) const;
-  double ComputeBoundR (double coeff0, double coeff1, double Posx, double Pn,double rs) const;
-  double ComputeCoeffForJacL (double coeff0, double coeff1, double Pn,double ls) const;
-  double ComputeCoeffForJacR (double coeff0, double coeff1, double Pn,double rs) const;
+  double ComputeBound(double coeff0, double coeff1, double Posx, double Pn,double rs) const;
+  double ComputeCoeffForJac (double coeff0, double coeff1, double Pn,double ls) const;
+  //double ComputeBoundL (double coeff0, double coeff1, double Posx, double Pn,double ls) const;
+  //double ComputeBoundR (double coeff0, double coeff1, double Posx, double Pn,double rs) const;
+  //double ComputeCoeffForJacL (double coeff0, double coeff1, double Pn,double ls) const;
+  //double ComputeCoeffForJacR (double coeff0, double coeff1, double Pn,double rs) const;
 void InitializeQuantities (const KinematicModel::Ptr& robot_model,double ee);
 
   /**
