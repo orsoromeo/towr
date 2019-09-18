@@ -60,13 +60,13 @@ public:
     nominal_stance_.resize(n_ee);
     base2hip_distance_.resize(n_ee);
     max_dev_from_nominal_.setZero();
-    ThetaL_.resize(4,4);
+    Theta_extension_.resize(4,4);
     ThetaN_.resize(4,4);
-    ThetaR_.resize(4,4);
+    Theta_retraction_.resize(4,4);
     Theta_cost_.resize(2,4);
-    coeffDL_.resize(4,4);
+    coeffD_extension_.resize(4,4);
     coeffDN_.resize(4,4);
-    coeffDR_.resize(4,4);
+    coeffD_retraction_.resize(4,4);
     
 
   }
@@ -109,7 +109,7 @@ public:
   }
   Eigen::MatrixXd GetThetaL () const
   { 
-    return ThetaL_;
+    return Theta_extension_;
   }
   Eigen::MatrixXd GetThetaN () const
   {
@@ -117,7 +117,7 @@ public:
   }
   Eigen::MatrixXd GetThetaR () const
   {
-    return ThetaR_;
+    return Theta_retraction_;
   }
   Eigen::MatrixXd GetThetaCost () const
   {
@@ -125,7 +125,7 @@ public:
   }
   Eigen::MatrixXd GetDL () const
   {
-    return coeffDL_;
+    return coeffD_extension_;
   }
   Eigen::MatrixXd GetDN () const
   {
@@ -133,7 +133,7 @@ public:
   }
   Eigen::MatrixXd GetDR () const
   {
-    return coeffDR_;
+    return coeffD_retraction_;
   }
   Eigen::VectorXd GetDCost () const
   {
@@ -144,13 +144,13 @@ protected:
   EEPos base2hip_distance_;
   Vector3d max_dev_from_nominal_;
   public:
-  Eigen::MatrixXd ThetaL_;
+  Eigen::MatrixXd Theta_extension_;
   Eigen::MatrixXd ThetaN_;
-  Eigen::MatrixXd ThetaR_;
+  Eigen::MatrixXd Theta_retraction_;
   Eigen::MatrixXd Theta_cost_;
-  Eigen::MatrixXd coeffDL_;
+  Eigen::MatrixXd coeffD_extension_;
   Eigen::MatrixXd coeffDN_;
-  Eigen::MatrixXd coeffDR_;
+  Eigen::MatrixXd coeffD_retraction_;
   Eigen::Vector2d coeffDcost_;
 
 

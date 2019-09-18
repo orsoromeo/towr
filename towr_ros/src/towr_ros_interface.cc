@@ -79,6 +79,7 @@ TowrRosInterface::GetGoalState(const TowrCommandMsg& msg) const
 {
   BaseState goal;
   goal.lin.at(kPos) = xpp::Convert::ToXpp(msg.goal_lin.pos);
+  goal.lin.at(kPos).z()=0.65;
   goal.lin.at(kVel) = xpp::Convert::ToXpp(msg.goal_lin.vel);
   goal.ang.at(kPos) = xpp::Convert::ToXpp(msg.goal_ang.pos);
   goal.ang.at(kVel) = xpp::Convert::ToXpp(msg.goal_ang.vel);
@@ -300,6 +301,7 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
   formulation_.final_base_ = GetGoalState(msg);
   time_=msg.total_duration;
   SetTowrDefaultState();
+  formulation_.final_base_.lin.at(kPos).z()=0.65;
 
 
   // visualization

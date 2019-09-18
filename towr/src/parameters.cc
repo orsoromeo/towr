@@ -67,7 +67,6 @@ Parameters::Parameters ()
   // costs_.push_back({ForcesCostID, 1.0}); //weighed by 1.0 relative to other costs
   // costs_.push_back({EEMotionCostID, 1.0}); //weighed by 1.0 relative to other costs
 
-
   // bounds on final 6DoF base state
   bounds_final_lin_pos_ = {X,Y};
   bounds_final_lin_vel_ = {X,Y,Z};

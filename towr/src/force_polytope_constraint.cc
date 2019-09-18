@@ -130,45 +130,45 @@ ForcePolytopeConstraint::GetValues () const
         //double ForcePolytopeConstraint::ComputeBound(double coeff0, double coeff1, double Posx, double P0, double P1) const
         //bound=(Posx-P0)/(P1-P0)*(coeff1-coeff0)+coeff0;
 
-       thetax=ComputeBound(coeffN_(j), coeffL_(j), hip2FootDistance, nominalHip2FootDistance, max_extension);
-        //bound=(hip2FootDistance-nominalHip2FootDistance)/(max_extension-nominalHip2FootDistance)*(coeffR_-coeffN_)+coeffN_;
-       d_polytope(j)=ComputeBound(coeffDN_(j), coeffDL_(j), hip2FootDistance, max_extension, nominalHip2FootDistance);
+       thetax=ComputeBound(coeffN_(j), coeff_extension_(j), hip2FootDistance, nominalHip2FootDistance, max_extension);
+        //bound=(hip2FootDistance-nominalHip2FootDistance)/(max_extension-nominalHip2FootDistance)*(coeff_retraction_-coeffN_)+coeffN_;
+       d_polytope(j)=ComputeBound(coeffDN_(j), coeffD_extension_(j), hip2FootDistance, max_extension, nominalHip2FootDistance);
       }
 
      if (hip2FootDistance<fabs(nominalHip2FootDistance)){
           std::cout<<" hip2FootDistance is in the upper half (leg is retracted)"<<std::endl;
-       //bound=(hip2FootDistance-max_retraction)/(nominalHip2FootDistance-max_retraction)*(coeffN_- coeffL_)+coeffL_;
-        thetax=ComputeBound(coeffR_(j), coeffN_(j), hip2FootDistance, max_retraction, nominalHip2FootDistance);
-        d_polytope(j)=ComputeBound(coeffDR_(j), coeffDN_(j), hip2FootDistance, max_retraction, nominalHip2FootDistance);
+       //bound=(hip2FootDistance-max_retraction)/(nominalHip2FootDistance-max_retraction)*(coeffN_- coeff_extension_)+coeff_extension_;
+        thetax=ComputeBound(coeff_retraction_(j), coeffN_(j), hip2FootDistance, max_retraction, nominalHip2FootDistance);
+        d_polytope(j)=ComputeBound(coeffD_retraction_(j), coeffDN_(j), hip2FootDistance, max_retraction, nominalHip2FootDistance);
       
       }
 
 //      if ((hip2FootDistance>=fabs(nominalHip2FootDistance))&&(hip2FootDistance<=fabs(max_extension))) {
 //        std::cout<<" hip2FootDistance is in the lower half (leg is extended) "<<std::endl;
-//       thetax=ComputeBoundL(coeffL_(j), coeffN_(j), hip2FootDistance, nominalHip2FootDistance, max_retraction);
+//       thetax=ComputeBoundL(coeff_extension_(j), coeffN_(j), hip2FootDistance, nominalHip2FootDistance, max_retraction);
 //       //ForcePolytopeConstraint::ComputeBoundL (double coeff0, double coeff1,  double Posx, double Pn,double ls) const
 //       //bound=(Posx-ls)*(coeff1-coeff0)/(Pn-ls)+coeff0;
-//       d_polytope(j)=ComputeBoundL(coeffDL_(j), coeffDN_(j), hip2FootDistance, nominalHip2FootDistance, max_retraction);
+//       d_polytope(j)=ComputeBoundL(coeffD_extension_(j), coeffDN_(j), hip2FootDistance, nominalHip2FootDistance, max_retraction);
 //      }
 //
 //     if ((hip2FootDistance<fabs(nominalHip2FootDistance))&&(hip2FootDistance>=fabs(max_retraction))){
 //          std::cout<<" hip2FootDistance is in the upper half (leg is retracted)"<<std::endl;
 //      
-//      thetax=ComputeBoundR(coeffN_(j), coeffR_(j), hip2FootDistance, nominalHip2FootDistance, max_extension); 
-//      d_polytope(j)=ComputeBoundR(coeffDN_(j),coeffDR_(j), hip2FootDistance, nominalHip2FootDistance, max_extension);
+//      thetax=ComputeBoundR(coeffN_(j), coeff_retraction_(j), hip2FootDistance, nominalHip2FootDistance, max_extension); 
+//      d_polytope(j)=ComputeBoundR(coeffDN_(j),coeffD_retraction_(j), hip2FootDistance, nominalHip2FootDistance, max_extension);
 //
 //      }
 //
 //      if(hip2FootDistance<fabs(max_retraction)){
 //          std::cout<<" hip2FootDistance reached the upper limit (max leg retraction)"<<std::endl;
-//      thetax=ComputeBoundR(coeffR_(j), coeffR_(j), hip2FootDistance, nominalHip2FootDistance, max_extension); 
-//      d_polytope(j)=ComputeBoundR(coeffDR_(j),coeffDR_(j), hip2FootDistance, nominalHip2FootDistance, max_extension);
+//      thetax=ComputeBoundR(coeff_retraction_(j), coeff_retraction_(j), hip2FootDistance, nominalHip2FootDistance, max_extension); 
+//      d_polytope(j)=ComputeBoundR(coeffD_retraction_(j),coeffD_retraction_(j), hip2FootDistance, nominalHip2FootDistance, max_extension);
 //      }
 //      if(hip2FootDistance>fabs(max_extension)){
-//       thetax=ComputeBoundL(coeffL_(j), coeffL_(j), hip2FootDistance, nominalHip2FootDistance, max_retraction);
+//       thetax=ComputeBoundL(coeff_extension_(j), coeff_extension_(j), hip2FootDistance, nominalHip2FootDistance, max_retraction);
 //       //ForcePolytopeConstraint::ComputeBoundL (double coeff0, double coeff1,  double Posx, double Pn,double ls) const
 //       //bound=(Posx-ls)*(coeff1-coeff0)/(Pn-ls)+coeff0;
-//       d_polytope(j)=ComputeBoundL(coeffDL_(j), coeffDL_(j), hip2FootDistance, nominalHip2FootDistance, max_retraction);
+//       d_polytope(j)=ComputeBoundL(coeffD_extension_(j), coeffD_extension_(j), hip2FootDistance, nominalHip2FootDistance, max_retraction);
 //      }
         
     std::cout<<"theta x is "<<thetax<<" and d is "<< d_polytope(j) <<std::endl;
@@ -264,32 +264,32 @@ ForcePolytopeConstraint::FillJacobianBlock (std::string var_set,
     
   //  double ForcePolytopeConstraint::ComputeCoeffForJac(double coeff0, double coeff1, double P0, double P1) const
   //  bound=(coeff1-coeff0)/(P1-P0);
-      thetax=ComputeBound(coeffN_(j), coeffL_(j), hip2FootDistance, nominalHip2FootDistance, max_extension);
-      theta_coeff=ComputeCoeffForJac(coeffN_(j), coeffL_(j), nominalHip2FootDistance, max_extension);
-       d_coeff=ComputeCoeffForJac(coeffDN_(j), coeffDL_(j), nominalHip2FootDistance, max_extension);
+      thetax=ComputeBound(coeffN_(j), coeff_extension_(j), hip2FootDistance, nominalHip2FootDistance, max_extension);
+      theta_coeff=ComputeCoeffForJac(coeffN_(j), coeff_extension_(j), nominalHip2FootDistance, max_extension);
+       d_coeff=ComputeCoeffForJac(coeffDN_(j), coeffD_extension_(j), nominalHip2FootDistance, max_extension);
       }
 
      if (hip2FootDistance<fabs(nominalHip2FootDistance)){
         //std::cout<<" hip2FootDistance is in the upper half (leg is retracted)"<<std::endl;
-        thetax=ComputeBound(coeffR_(j), coeffN_(j), hip2FootDistance, max_retraction, nominalHip2FootDistance);
-        theta_coeff=ComputeCoeffForJac(coeffR_(j), coeffN_(j), max_retraction, nominalHip2FootDistance);
-        d_coeff=ComputeCoeffForJac(coeffDR_(j),coeffDN_(j), max_retraction, nominalHip2FootDistance);
+        thetax=ComputeBound(coeff_retraction_(j), coeffN_(j), hip2FootDistance, max_retraction, nominalHip2FootDistance);
+        theta_coeff=ComputeCoeffForJac(coeff_retraction_(j), coeffN_(j), max_retraction, nominalHip2FootDistance);
+        d_coeff=ComputeCoeffForJac(coeffD_retraction_(j),coeffDN_(j), max_retraction, nominalHip2FootDistance);
      }
 
 //    if (vector_base_to_ee_B(0)>nominal_ee_pos_B_(0)) 
 //      {
 //
-//        thetax=ComputeBoundR(coeffN_(j),coeffR_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0)); 
-//        theta_coeff=ComputeCoeffForJacR(coeffN_(j),coeffR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
-//        d_coeff=ComputeCoeffForJacR(coeffDN_(j),coeffDR_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
+//        thetax=ComputeBoundR(coeffN_(j),coeff_retraction_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0)); 
+//        theta_coeff=ComputeCoeffForJacR(coeffN_(j),coeff_retraction_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
+//        d_coeff=ComputeCoeffForJacR(coeffDN_(j),coeffD_retraction_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)+max_deviation_from_nominal_(0));
 //        
 //      }
 //    else 
 //    {
 //
-//      thetax=ComputeBoundL(coeffL_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0)); 
-//      theta_coeff=ComputeCoeffForJacL(coeffL_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
-//      d_coeff=ComputeCoeffForJacL(coeffDL_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
+//      thetax=ComputeBoundL(coeff_extension_(j), coeffN_(j), vector_base_to_ee_B(0), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0)); 
+//      theta_coeff=ComputeCoeffForJacL(coeff_extension_(j),coeffN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
+//      d_coeff=ComputeCoeffForJacL(coeffD_extension_(j),coeffDN_(j), nominal_ee_pos_B_(0), nominal_ee_pos_B_(0)-max_deviation_from_nominal_(0));
 //
 //    }
 
@@ -373,16 +373,16 @@ ForcePolytopeConstraint::FillJacobianBlock (std::string var_set,
     
   //  double ForcePolytopeConstraint::ComputeCoeffForJac(double coeff0, double coeff1, double P0, double P1) const
   //  bound=(coeff1-coeff0)/(P1-P0);
-      thetax=ComputeBound(coeffN_(j), coeffL_(j), hip2FootDistance, nominalHip2FootDistance, max_extension);
-      theta_coeff=ComputeCoeffForJac(coeffN_(j), coeffL_(j), nominalHip2FootDistance, max_extension);
-       d_coeff=ComputeCoeffForJac(coeffDN_(j), coeffDL_(j), nominalHip2FootDistance, max_extension);
+      thetax=ComputeBound(coeffN_(j), coeff_extension_(j), hip2FootDistance, nominalHip2FootDistance, max_extension);
+      theta_coeff=ComputeCoeffForJac(coeffN_(j), coeff_extension_(j), nominalHip2FootDistance, max_extension);
+       d_coeff=ComputeCoeffForJac(coeffDN_(j), coeffD_extension_(j), nominalHip2FootDistance, max_extension);
       }
 
      if (hip2FootDistance<fabs(nominalHip2FootDistance)){
         //std::cout<<" hip2FootDistance is in the upper half (leg is retracted)"<<std::endl;
-        thetax=ComputeBound(coeffR_(j), coeffN_(j), hip2FootDistance, max_retraction, nominalHip2FootDistance);
-        theta_coeff=ComputeCoeffForJac(coeffR_(j), coeffN_(j), max_retraction, nominalHip2FootDistance);
-        d_coeff=ComputeCoeffForJac(coeffDR_(j),coeffDN_(j), max_retraction, nominalHip2FootDistance);
+        thetax=ComputeBound(coeff_retraction_(j), coeffN_(j), hip2FootDistance, max_retraction, nominalHip2FootDistance);
+        theta_coeff=ComputeCoeffForJac(coeff_retraction_(j), coeffN_(j), max_retraction, nominalHip2FootDistance);
+        d_coeff=ComputeCoeffForJac(coeffD_retraction_(j),coeffDN_(j), max_retraction, nominalHip2FootDistance);
      }
 
     double dlegPitchAngle_dpx = - vector_base_to_ee_B(2)/squaredHip2FootDistance;
@@ -485,16 +485,16 @@ ForcePolytopeConstraint::FillJacobianBlock (std::string var_set,
     
   //  double ForcePolytopeConstraint::ComputeCoeffForJac(double coeff0, double coeff1, double P0, double P1) const
   //  bound=(coeff1-coeff0)/(P1-P0);
-      thetax=ComputeBound(coeffN_(j), coeffL_(j), hip2FootDistance, nominalHip2FootDistance, max_extension);
-      theta_coeff=ComputeCoeffForJac(coeffN_(j), coeffL_(j), nominalHip2FootDistance, max_extension);
-       d_coeff=ComputeCoeffForJac(coeffDN_(j), coeffDL_(j), nominalHip2FootDistance, max_extension);
+      thetax=ComputeBound(coeffN_(j), coeff_extension_(j), hip2FootDistance, nominalHip2FootDistance, max_extension);
+      theta_coeff=ComputeCoeffForJac(coeffN_(j), coeff_extension_(j), nominalHip2FootDistance, max_extension);
+       d_coeff=ComputeCoeffForJac(coeffDN_(j), coeffD_extension_(j), nominalHip2FootDistance, max_extension);
       }
 
      if (hip2FootDistance<fabs(nominalHip2FootDistance)){
         //std::cout<<" hip2FootDistance is in the upper half (leg is retracted)"<<std::endl;
-        thetax=ComputeBound(coeffR_(j), coeffN_(j), hip2FootDistance, max_retraction, nominalHip2FootDistance);
-        theta_coeff=ComputeCoeffForJac(coeffR_(j), coeffN_(j), max_retraction, nominalHip2FootDistance);
-        d_coeff=ComputeCoeffForJac(coeffDR_(j),coeffDN_(j), max_retraction, nominalHip2FootDistance);
+        thetax=ComputeBound(coeff_retraction_(j), coeffN_(j), hip2FootDistance, max_retraction, nominalHip2FootDistance);
+        theta_coeff=ComputeCoeffForJac(coeff_retraction_(j), coeffN_(j), max_retraction, nominalHip2FootDistance);
+        d_coeff=ComputeCoeffForJac(coeffD_retraction_(j),coeffDN_(j), max_retraction, nominalHip2FootDistance);
      }
 
     double dlegPitchAngle_dpx = - vector_base_to_ee_B(2)/squaredHip2FootDistance;
@@ -619,20 +619,20 @@ Eigen::Vector3d ForcePolytopeConstraint::ComputeBasetoEEB (double time) const
 void ForcePolytopeConstraint::InitializeQuantities (const KinematicModel::Ptr& robot_model, double ee) 
 {
   std::cout<<"leg N. "<<ee<<std::endl;
-  coeffL_.resize(4);
+  coeff_extension_.resize(4);
   Eigen::MatrixXd pp=robot_model->GetThetaL();
-  coeffL_=robot_model->GetThetaL().col(ee);
+  coeff_extension_=robot_model->GetThetaL().col(ee);
   coeffN_.resize(4);
   coeffN_=robot_model->GetThetaN().col(ee);
-  coeffR_.resize(4);
-  coeffR_=robot_model->GetThetaR().col(ee);
+  coeff_retraction_.resize(4);
+  coeff_retraction_=robot_model->GetThetaR().col(ee);
   
-  coeffDL_.resize(4);
-  coeffDL_=robot_model->GetDL().col(ee);
+  coeffD_extension_.resize(4);
+  coeffD_extension_=robot_model->GetDL().col(ee);
   coeffDN_.resize(4);
   coeffDN_=robot_model->GetDN().col(ee);
-  coeffDR_.resize(4);
-  coeffDR_=robot_model->GetDR().col(ee);
+  coeffD_retraction_.resize(4);
+  coeffD_retraction_=robot_model->GetDR().col(ee);
 
 
   f_polytope.resize(3,6);

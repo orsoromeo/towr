@@ -86,14 +86,14 @@ private:
   mutable Eigen::MatrixXd f_polytope;
   mutable Eigen::VectorXd d_polytope;
 
-  Eigen::VectorXd coeffL_;
+  Eigen::VectorXd coeff_extension_;
   Eigen::VectorXd coeffN_;
-  Eigen::VectorXd coeffR_;
+  Eigen::VectorXd coeff_retraction_;
   //Eigen::Vector3d coeff_cost_;
  
-  Eigen::VectorXd coeffDL_;
+  Eigen::VectorXd coeffD_extension_;
   Eigen::VectorXd coeffDN_;
-  Eigen::VectorXd coeffDR_;
+  Eigen::VectorXd coeffD_retraction_;
   Eigen::Vector3d coeff_cost_D;
   
   Eigen::Vector3d max_deviation_from_nominal_;
