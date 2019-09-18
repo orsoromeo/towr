@@ -238,8 +238,10 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
       nlp_.AddConstraintSet(c);
     for (auto c : formulation_.GetCosts())
       nlp_.AddCostSet(c);
+      solver_->SetOption("print_level", 5);
 
     solver_->Solve(nlp_);
+       
    SaveOptimizationAsRosbag(bag_file, robot_params_msg, false);
    int success = system(("rosbag play --topics "
        + xpp_msgs::robot_state_desired + " "
@@ -261,26 +263,33 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   xpp_msgs::RobotStateCartesianTrajectory xpp_msg = xpp::Convert::ToRos(GetTrajectory());
 
   //dwl_msgs::WholeBodyTrajectory wbtraj = ToRos();
-
+  std::string name;
   trajectory_.publish(xpp_msg);
-  
-  char a;
-  std::cout<<"do you want to publish the trajectory? y/n"<<std::endl;
-  std::cin>>a;
-  if(a=='y'){
-    std::cout<<"New trajectory being published."<<std::endl;
-    ToRosAndPublish();
-    //dwltrajectory_.publish(wbtraj);
-  }else{
-    if(a=='n'){  
-      std::cout<<"New trajectory will not be published."<<std::endl;
-    }else{
-      std::cout<<"Please re-optimize and then enter a valid digit (either y or n)."<<std::endl;
+  if (solution.ee_motion_.size()>2)
+  {
+    char a;
+    std::cout<<"do you want to publish the trajectory? y/n"<<std::endl;
+    std::cin>>a;
+    if(a=='y')
+    {
+      std::cout<<"New trajectory being published."<<std::endl;
+      name=ToRos();;
+      //dwltrajectory_.publish(wbtraj);
+    }
+    else
+    {
+      if(a=='n')
+      {  
+        std::cout<<"New trajectory will not be published."<<std::endl;
+      }
+      else
+      {
+        std::cout<<"Please re-optimize and then enter a valid digit (either y or n)."<<std::endl;
+      }
     }
   }
-
   int success1 = system (("mv " + bag_file + " ~/misc_ws/src/bag_files").c_str()); //mio computer
-  // int success1 = system (("mv"+ bag_file + " ~/catkin_ws/bag_files")c_str()); //hyq_furious 
+  int success2 = system (("mv "+ name + " ~/catkin_ws/src/bag_files/Whole-Body-Rosbag").c_str()); 
   
 }
 
@@ -331,7 +340,6 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
     SaveOptimizationAsRosbag(bag_file, robot_params_msg, msg, false);
         // int success1 = system (("mv"+ bag_file + " ~/catkin_ws/bag_files")c_str()); //hyq_furious
 
-    ToRos();
 
 
   }
@@ -353,26 +361,37 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
   xpp_msgs::RobotStateCartesianTrajectory xpp_msg = xpp::Convert::ToRos(GetTrajectory());
 
   dwl_msgs::WholeBodyTrajectory wbtraj;
-
+  std::string name;
   trajectory_.publish(xpp_msg);
-  if (msg.optimize){
+  if (solution.ee_motion_.size()>2)
+  {
+   if (msg.optimize)
+   {
     int success1 = system (("mv " + bag_file + " ../misc_ws/src/bag_files").c_str()); //mio computer
     char a;
     std::cout<<"do you want to publish the trajectory? y/n"<<std::endl;
     std::cin>>a;
-    if(a=='y'){
+    if(a=='y')
+    {
+      name=ToRos();
       std::cout<<"New trajectory being published."<<std::endl;
-      dwltrajectory_.publish(wbtraj);
-    }else{
-      if(a=='n'){  
+      
+    }
+    else
+    {
+      if(a=='n')
+      {  
         std::cout<<"New trajectory will not be published."<<std::endl;
-      }else{
+      }
+      else
+      {
         std::cout<<"Please re-optimize and then enter a valid digit (either y or n)."<<std::endl;
       }
     }
   }
+  }
+  int success2 = system (("mv "+ name + " ~/misc_ws/src/bag_files/Whole-Body-Rosbag").c_str()); //hyq_furious 
 }
-
 void
 TowrRosInterface::PublishInitialState()
 {
@@ -646,7 +665,7 @@ void TowrRosInterface::ToRosAndPublish()
   
 }
 
-void TowrRosInterface::ToRos()
+std::string TowrRosInterface::ToRos()
 {
 
   time_t ct;
@@ -782,7 +801,7 @@ void TowrRosInterface::ToRos()
     planned_wt.trajectory.push_back(planned_wbs_msg);
     
     //timestamp = t;
-    auto timestamp = ::ros::Time(t + 1e-6);
+    auto timestamp = ::ros::Time(i*0.004 + 1e-6);
     bag.write(wb_topic, timestamp, planned_wt);
     }
     //double t = 0.0;
@@ -808,7 +827,7 @@ void TowrRosInterface::ToRos()
     ////std::cout<<"i am here2"<<std::endl;
     bag.close();
 
-    //return planned_wt;
+    return bag_file_name;
   
 }
 

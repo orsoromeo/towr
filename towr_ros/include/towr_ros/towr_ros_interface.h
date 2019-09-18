@@ -150,7 +150,7 @@ private:
                                const std::vector<xpp::RobotStateCartesian>& traj,
                                const std::string& topic) const;
 
-  void ToRos();
+  std::string ToRos();
   void ToRosAndPublish();
 
 };
