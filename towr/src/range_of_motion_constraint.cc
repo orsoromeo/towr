@@ -42,6 +42,7 @@ RangeOfMotionConstraint::RangeOfMotionConstraint (const KinematicModel::Ptr& mod
 
   base_linear_  = spline_holder.base_linear_;
   base_angular_ = EulerConverter(spline_holder.base_angular_);
+  base_angular_NodeSpline_= spline_holder.base_angular_;
   ee_motion_    = spline_holder.ee_motion_.at(ee);
 
   max_deviation_from_nominal_ = model->GetMaximumDeviationFromNominal();
@@ -89,13 +90,15 @@ RangeOfMotionConstraint::UpdateConstraintAtInstance (double t, int k, VectorXd& 
   }
   else
   {
-    g.coeffRef(a,0) = pos_ee_W(2) + HeightToCheck_ - terrain_->GetHeight(pos_ee_W(0)+lenght_*cos(theta_), pos_ee_W(1));
-    g.coeffRef(a+1,0) = pos_ee_W(2) + HeightToCheck_/3 - terrain_->GetHeight(pos_ee_W(0)+(lenght_*cos(theta_)/3), pos_ee_W(1));
-    g.coeffRef(a+2,0) = pos_ee_W(2) + HeightToCheck_*2/3 - terrain_->GetHeight(pos_ee_W(0)+(2*lenght_*cos(theta_)/3), pos_ee_W(1));
+    double yaw= base_angular_NodeSpline_->GetPoint(t).p()(2);
+    double x_projection = lenght_*cos(theta_)*cos(yaw);
+    double y_projection = lenght_*cos(theta_)*sin(yaw);
+    g.coeffRef(a,0) =   pos_ee_W(2) + HeightToCheck_ -     terrain_->GetHeight(pos_ee_W(0)+x_projection, pos_ee_W(1)+y_projection);
+    g.coeffRef(a+1,0) = pos_ee_W(2) + HeightToCheck_/3 -   terrain_->GetHeight(pos_ee_W(0)+(x_projection/3.), pos_ee_W(1)+y_projection/3.);
+    g.coeffRef(a+2,0) = pos_ee_W(2) + HeightToCheck_*2/3 - terrain_->GetHeight(pos_ee_W(0)+2.*x_projection/3., pos_ee_W(1)+2*y_projection/3.);
   }
 
   
-  //std::cout<<"constraint "<<ee_<<" "<<t<<"  "<<g.coeffRef(a,0)<<std::endl;
 
 }
 
@@ -142,6 +145,14 @@ RangeOfMotionConstraint::UpdateJacobianAtInstance (double t, int k,
     Vector3d ee_pos_W = ee_motion_->GetPoint(t).p();
     Vector3d r_W = ee_pos_W - base_W;
     jac.middleRows(row_start, k3D) = base_angular_.DerivOfRotVecMult(t,r_W, true);
+    Vector3d pos_ee_W = ee_motion_->GetPoint(t).p();
+    double yaw= base_angular_NodeSpline_->GetPoint(t).p()(2);
+    double x_projection = lenght_*cos(theta_)*cos(yaw);
+    double y_projection = lenght_*cos(theta_)*sin(yaw);
+    jac.middleRows(row_start+3,0) = - GetDerivativeHeightWrtAngularNodes(jac.cols(),t,pos_ee_W(0)+x_projection, pos_ee_W(1)+y_projection);
+    jac.middleRows(row_start+4,0) = - GetDerivativeHeightWrtAngularNodes(jac.cols(),t,pos_ee_W(0)+x_projection/3., pos_ee_W(1)+y_projection/3.);
+    jac.middleRows(row_start+5,0) = - GetDerivativeHeightWrtAngularNodes(jac.cols(),t,pos_ee_W(0)+2.*x_projection/3., pos_ee_W(1)+2.*y_projection/3.);
+
   }
 
   if (var_set == id::EEMotionNodes(ee_)) {
@@ -154,12 +165,13 @@ RangeOfMotionConstraint::UpdateJacobianAtInstance (double t, int k,
     }
     else 
     {
-     jac.middleRows(GetRow(k,3),0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+lenght_*cos(theta_),pos_ee_W(1));
-     jac.middleRows(GetRow(k,4),0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+lenght_*cos(theta_)/3,pos_ee_W(1));
-     jac.middleRows(GetRow(k,5),0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+lenght_*cos(theta_)*2/3,pos_ee_W(1));
-
+    double yaw= base_angular_NodeSpline_->GetPoint(t).p()(2);
+    double x_projection = lenght_*cos(theta_)*cos(yaw);
+    double y_projection = lenght_*cos(theta_)*sin(yaw);
+     jac.middleRows(row_start+3,0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+x_projection, pos_ee_W(1)+y_projection);
+     jac.middleRows(row_start+4,0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+x_projection/3., pos_ee_W(1)+y_projection/3.);
+     jac.middleRows(row_start+5,0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+x_projection/3., pos_ee_W(1)+y_projection/3.);
     }
-    //std::cout<<"Jacobian "<<jac.middleRows(row_start,4)<<std::endl;
   }
 
 
@@ -191,7 +203,28 @@ RangeOfMotionConstraint::GetDerivativeHeightWrtNodes (double jac_cols, double t,
   return jac1;
 }
 
+NodeSpline::Jacobian
+RangeOfMotionConstraint::GetDerivativeHeightWrtAngularNodes (double jac_cols, double t,double posx, double posy) const
+{
+  Jacobian jac1;
+  jac1.resize(1, jac_cols);
 
+  Jacobian DerYawWrtAngularNodes= base_angular_NodeSpline_->GetJacobianWrtNodes(t, kPos).row(2);
+  //auto JacWrtAngularNodesX= DerPosWrtAngularNodes.row(0);
+  //auto JacWrtAngularNodesY= DerPosWrtAngularNodes.row(1);
+  //
+  double DerHeightWrtPosX;
+  double DerHeightWrtPosY;
+  
+  DerHeightWrtPosX= terrain_->GetHeightDerivWrtX(posx,posy);
+  DerHeightWrtPosY= terrain_->GetHeightDerivWrtY(posx,posy);
+  double yaw= base_angular_NodeSpline_->GetPoint(t).p()(2);
 
+  jac1= -sin(yaw)*DerHeightWrtPosX*DerYawWrtAngularNodes + cos(yaw)*DerHeightWrtPosY * DerYawWrtAngularNodes;
+  
+
+  return jac1;
+
+}
 } /* namespace xpp */
 

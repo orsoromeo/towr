@@ -76,7 +76,8 @@ public:
   virtual ~RangeOfMotionConstraint() = default;
 
 private:
-  NodeSpline::Ptr base_linear_;     ///< the linear position of the base.
+  NodeSpline::Ptr base_linear_; 
+   NodeSpline::Ptr base_angular_NodeSpline_;    ///< the linear position of the base.
   EulerConverter base_angular_; ///< the orientation of the base.
   NodeSpline::Ptr ee_motion_;       ///< the linear position of the endeffectors.
   HeightMap::Ptr terrain_;
@@ -91,6 +92,8 @@ private:
   void UpdateBoundsAtInstance (double t, int k, VecBound&) const override;
   void UpdateJacobianAtInstance(double t, int k, std::string, Jacobian&) const override;
   NodeSpline::Jacobian GetDerivativeHeightWrtNodes (double jac_cols, double t, double posx, double posy) const;
+    NodeSpline::Jacobian GetDerivativeHeightWrtAngularNodes (double jac_cols, double t, double posx, double posy) const;
+
   int GetRow(int node, int dimension) const;
 };
 

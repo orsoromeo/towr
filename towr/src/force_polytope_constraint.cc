@@ -369,7 +369,7 @@ ForcePolytopeConstraint::FillJacobianBlock (std::string var_set,
 
     for (j=0; j<4; j++)
    {
-    if (hip2FootDistance>=fabs(nominalHip2FootDistance)) {
+      if (hip2FootDistance>=fabs(nominalHip2FootDistance)) {
     
   //  double ForcePolytopeConstraint::ComputeCoeffForJac(double coeff0, double coeff1, double P0, double P1) const
   //  bound=(coeff1-coeff0)/(P1-P0);
