@@ -239,8 +239,10 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
       nlp_.AddConstraintSet(c);
     for (auto c : formulation_.GetCosts())
       nlp_.AddCostSet(c);
+      solver_->SetOption("print_level", 5);
 
     solver_->Solve(nlp_);
+       
    SaveOptimizationAsRosbag(bag_file, robot_params_msg, false);
    int success = system(("rosbag play --topics "
        + xpp_msgs::robot_state_desired + " "
@@ -262,26 +264,33 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
   xpp_msgs::RobotStateCartesianTrajectory xpp_msg = xpp::Convert::ToRos(GetTrajectory());
 
   //dwl_msgs::WholeBodyTrajectory wbtraj = ToRos();
-
+  std::string name;
   trajectory_.publish(xpp_msg);
-  
-  char a;
-  std::cout<<"do you want to publish the trajectory? y/n"<<std::endl;
-  std::cin>>a;
-  if(a=='y'){
-    std::cout<<"New trajectory being published."<<std::endl;
-    ToRosAndPublish();
-    //dwltrajectory_.publish(wbtraj);
-  }else{
-    if(a=='n'){  
-      std::cout<<"New trajectory will not be published."<<std::endl;
-    }else{
-      std::cout<<"Please re-optimize and then enter a valid digit (either y or n)."<<std::endl;
+  if (solution.ee_motion_.size()>2)
+  {
+    char a;
+    std::cout<<"do you want to publish the trajectory? y/n"<<std::endl;
+    std::cin>>a;
+    if(a=='y')
+    {
+      std::cout<<"New trajectory being published."<<std::endl;
+      name=ToRos();;
+      //dwltrajectory_.publish(wbtraj);
+    }
+    else
+    {
+      if(a=='n')
+      {  
+        std::cout<<"New trajectory will not be published."<<std::endl;
+      }
+      else
+      {
+        std::cout<<"Please re-optimize and then enter a valid digit (either y or n)."<<std::endl;
+      }
     }
   }
-
   int success1 = system (("mv " + bag_file + " ~/misc_ws/src/bag_files").c_str()); //mio computer
-  // int success1 = system (("mv"+ bag_file + " ~/catkin_ws/bag_files")c_str()); //hyq_furious 
+  int success2 = system (("mv "+ name + " ~/catkin_ws/src/bag_files/Whole-Body-Rosbag").c_str()); 
   
 }
 
@@ -330,8 +339,9 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
       nlp_.AddCostSet(c);
 
     solver_->Solve(nlp_);
-    SaveOptimizationAsRosbag(bag_file, robot_params_msg, msg,false);
-        // int success1 = system (("mv"+ bag_file + " ~/catkin_ws/bag_files")c_str()); //hyq_furious 
+    SaveOptimizationAsRosbag(bag_file, robot_params_msg, msg, false);
+        // int success1 = system (("mv"+ bag_file + " ~/catkin_ws/bag_files")c_str()); //hyq_furious
+
 
 
   }
@@ -352,27 +362,38 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
   // to publish entire trajectory (e.g. to send to controller)
   xpp_msgs::RobotStateCartesianTrajectory xpp_msg = xpp::Convert::ToRos(GetTrajectory());
 
-  dwl_msgs::WholeBodyTrajectory wbtraj = ToRos();
-
+  dwl_msgs::WholeBodyTrajectory wbtraj;
+  std::string name;
   trajectory_.publish(xpp_msg);
-  if (msg.optimize){
+  if (solution.ee_motion_.size()>2)
+  {
+   if (msg.optimize)
+   {
     int success1 = system (("mv " + bag_file + " ../misc_ws/src/bag_files").c_str()); //mio computer
     char a;
     std::cout<<"do you want to publish the trajectory? y/n"<<std::endl;
     std::cin>>a;
-    if(a=='y'){
+    if(a=='y')
+    {
+      name=ToRos();
       std::cout<<"New trajectory being published."<<std::endl;
-      dwltrajectory_.publish(wbtraj);
-    }else{
-      if(a=='n'){  
+      
+    }
+    else
+    {
+      if(a=='n')
+      {  
         std::cout<<"New trajectory will not be published."<<std::endl;
-      }else{
+      }
+      else
+      {
         std::cout<<"Please re-optimize and then enter a valid digit (either y or n)."<<std::endl;
       }
     }
   }
+  }
+  int success2 = system (("mv "+ name + " ~/misc_ws/src/bag_files/Whole-Body-Rosbag").c_str()); //hyq_furious 
 }
-
 void
 TowrRosInterface::PublishInitialState()
 {
@@ -534,7 +555,7 @@ void TowrRosInterface::ToRosAndPublish()
   for(int i=0; i<solution.base_linear_->GetTotalTime()/sampling_time; i++)
   {
     dwl_msgs::WholeBodyTrajectory planned_wt;
-    double t=i*sampling_time;
+    double t=(double)i*sampling_time;
     dwl_msgs::WholeBodyState planned_wbs_msg;
     for(int ee=0; ee<solution.ee_motion_.size(); ee++)
     {
@@ -646,9 +667,18 @@ void TowrRosInterface::ToRosAndPublish()
   
 }
 
-dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
+std::string TowrRosInterface::ToRos()
 {
-  dwl_msgs::WholeBodyTrajectory planned_wt;
+
+  time_t ct;
+  ct = time(NULL);
+  struct tm *localTime = localtime(&ct);
+  char buffer [80];
+  strftime(buffer, 80, "%d-%m-%Y-%H-%M-%S", localTime);
+  std::string bag_file_name = "whole-body-trajectory-" + std::string(buffer)+ ".bag";
+  rosbag::Bag bag;
+  bag.open(bag_file_name, rosbag::bagmode::Write);
+  const std::string wb_topic = "hyq/plan";
 
   //planned_wt.resize(solution.base_linear_->GetTotalTime()/0.04);
   auto base_angular=EulerConverter(solution.base_angular_);
@@ -665,7 +695,9 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
   for(int i=0; i<solution.base_linear_->GetTotalTime()/sampling_time; i++)
   {
 
-    double t=i*sampling_time;
+    dwl_msgs::WholeBodyTrajectory planned_wt;
+
+    double t=(double)i*sampling_time;
     dwl_msgs::WholeBodyState planned_wbs_msg;
     for(int ee=0; ee<solution.ee_motion_.size(); ee++)
     {
@@ -768,7 +800,12 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
       planned_wbs_msg.base.push_back(base_state);
 
     }
-    planned_wt.trajectory.push_back(planned_wbs_msg);}
+    planned_wt.trajectory.push_back(planned_wbs_msg);
+    
+    //timestamp = t;
+    auto timestamp = ::ros::Time(i*0.004 + 1e-6);
+    bag.write(wb_topic, timestamp, planned_wt);
+    }
     //double t = 0.0;
     //        while (t<=solution.base_linear_->GetTotalTime() + 1e-5)
     //         {
@@ -790,7 +827,9 @@ dwl_msgs::WholeBodyTrajectory TowrRosInterface::ToRos()
 
 
     ////std::cout<<"i am here2"<<std::endl;
-    return planned_wt;
+    bag.close();
+
+    return bag_file_name;
   
 }
 
