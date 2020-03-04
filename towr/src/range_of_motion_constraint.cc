@@ -159,19 +159,19 @@ RangeOfMotionConstraint::UpdateJacobianAtInstance (double t, int k,
     jac.middleRows(row_start, k3D) = b_R_w*ee_motion_->GetJacobianWrtNodes(t,kPos);
 
     Vector3d pos_ee_W = ee_motion_->GetPoint(t).p();
- //   if (ee_<2)
- //   {
- //    //jac.middleRows(GetRow(k,3),0) =ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)  - GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+distance_,pos_ee_W(1));
- //   }
- //   else 
- //   {
- //    double yaw= base_angular_NodeSpline_->GetPoint(t).p()(2);
- //    double x_projection = lenght_*cos(theta_)*cos(yaw);
- //    double y_projection = lenght_*cos(theta_)*sin(yaw);
- //    jac.middleRows(row_start+3,0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+x_projection, pos_ee_W(1)+y_projection);
- //    jac.middleRows(row_start+4,0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+x_projection/3., pos_ee_W(1)+y_projection/3.);
- //    jac.middleRows(row_start+5,0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+x_projection/3., pos_ee_W(1)+y_projection/3.);
+//    if (ee_<2)
+//    {
+//     //jac.middleRows(GetRow(k,3),0) =ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)  - GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+distance_,pos_ee_W(1));
 //    }
+//    else 
+//    {
+//     double yaw= base_angular_NodeSpline_->GetPoint(t).p()(2);
+//     double x_projection = lenght_*cos(theta_)*cos(yaw);
+//     double y_projection = lenght_*cos(theta_)*sin(yaw);
+//     jac.middleRows(row_start+3,0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+x_projection, pos_ee_W(1)+y_projection);
+//     jac.middleRows(row_start+4,0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+x_projection/3., pos_ee_W(1)+y_projection/3.);
+//     jac.middleRows(row_start+5,0) = ee_motion_->GetJacobianWrtNodes(t,kPos).row(2)- GetDerivativeHeightWrtNodes(jac.cols(),t,pos_ee_W(0)+x_projection/3., pos_ee_W(1)+y_projection/3.);
+//   }
   }
 
 

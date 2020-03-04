@@ -1,3 +1,4 @@
+
 /******************************************************************************
 Copyright (c) 2018, Alexander W. Winkler. All rights reserved.
 
@@ -273,7 +274,7 @@ TowrRosInterface::RecomputePlan(const geometry_msgs::Vector3& msg)
     if(a=='y')
     {
       std::cout<<"New trajectory being published."<<std::endl;
-      name=ToRos();;
+      ToRosAndPublish();
       //dwltrajectory_.publish(wbtraj);
     }
     else
@@ -373,7 +374,7 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
     std::cin>>a;
     if(a=='y')
     {
-      name=ToRos();
+      ToRosAndPublish();
       std::cout<<"New trajectory being published."<<std::endl;
       
     }
@@ -546,10 +547,7 @@ void TowrRosInterface::ToRosAndPublish()
   Eigen::MatrixXd oldFootVelDesWF(3,4);
   oldFootVelDesWF.setZero();
   ros::Rate loop_rate_(250.0);
-  for(int ee=0; ee<solution.ee_motion_.size(); ee++){
-  oldFootPosDesWF.col(ee) = formulation_.initial_ee_W_.at(ee);
-  }
-  
+
   for(int i=0; i<solution.base_linear_->GetTotalTime()/sampling_time; i++)
   {
     dwl_msgs::WholeBodyTrajectory planned_wt;
@@ -561,7 +559,7 @@ void TowrRosInterface::ToRosAndPublish()
       Eigen::Matrix3d w_R_b = base_angular.GetRotationMatrixBaseToWorld(t);
       //Eigen::Vector3d footPosDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).p()-solution.base_linear_->GetPoint(t).p());
       Eigen::Vector3d footPosDesWF = solution.ee_motion_.at(ee)->GetPoint(t).p();
-      contact.position.x = footPosDesWF(0) - solution.ee_motion_.at(ee)->GetPoint(0.0).p().x();
+      contact.position.x = footPosDesWF(0) - solution.ee_motion_.at(ee)->GetPoint(0.0).p().x(); //ci vuole la posizione attuale del com
       contact.position.y = footPosDesWF(1) - solution.ee_motion_.at(ee)->GetPoint(0.0).p().y();
       contact.position.z = footPosDesWF(2) - solution.ee_motion_.at(ee)->GetPoint(0.0).p().z(); 
       //Eigen::Vector3d footVelDesCoM = w_R_b.transpose()*(solution.ee_motion_.at(ee)->GetPoint(t).v() - solution.base_linear_->GetPoint(t).v());

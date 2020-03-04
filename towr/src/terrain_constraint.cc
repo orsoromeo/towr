@@ -49,8 +49,8 @@ TerrainConstraint::InitVariableDependedQuantities (const VariablesPtr& x)
   // skip first node, b/c already constrained by initial stance
   for (int id=1; id<ee_motion_->GetNodes().size(); ++id)
     node_ids_.push_back(id);
-  //int constraint_count = node_ids_.size();
-  int constraint_count = node_ids_.size()*2;
+  int constraint_count = node_ids_.size();
+  //int constraint_count = node_ids_.size()*2;
   SetRows(constraint_count);
 }
 
@@ -63,9 +63,9 @@ TerrainConstraint::GetValues () const
   int row = 0;
   for (int id : node_ids_) {
     Vector3d p = nodes.at(id).p();
-//    g(row++) = p.z() - terrain_->GetHeight(p.x(), p.y());
-    g(row++) = p.z() - terrain_->GetHeight(p.x()+0.04, p.y());
-    g(row++) = p.z() - terrain_->GetHeight(p.x()-0.02, p.y());
+    g(row++) = p.z() - terrain_->GetHeight(p.x(), p.y());
+//    g(row++) = p.z() - terrain_->GetHeight(p.x()+0.02, p.y());
+//    g(row++) = p.z() - terrain_->GetHeight(p.x()-0.02, p.y());
 
   }
 
@@ -83,12 +83,12 @@ TerrainConstraint::GetBounds () const
     if (ee_motion_->IsConstantNode(id))
       {
         bounds.at(row++) = ifopt::BoundZero;
-        bounds.at(row++)= ifopt::BoundZero;
+//        bounds.at(row++)= ifopt::BoundZero;
      }
     else
       {
         bounds.at(row++) = ifopt::Bounds(0.05, 0.5);
-        bounds.at(row++) = ifopt::Bounds(-0.5, 0.5);
+//        bounds.at(row++) = ifopt::Bounds(-0.5, 0.5);
      }
     //row++;
   }
@@ -106,16 +106,16 @@ TerrainConstraint::FillJacobianBlock (std::string var_set, Jacobian& jac) const
     for (int id : node_ids_) 
     {
       int idx = ee_motion_->GetOptIndex(NodesVariables::NodeValueInfo(id, kPos, Z));
-      jac.coeffRef(row++, idx) = 1.0;
+//      jac.coeffRef(row++, idx) = 1.0;
       jac.coeffRef(row, idx) = 1.0;
       Vector3d p = nodes.at(id).p();
       for (auto dim : {X,Y}) 
       {
         
         int idx = ee_motion_->GetOptIndex(NodesVariables::NodeValueInfo(id, kPos, dim));
-        //jac.coeffRef(row, idx) = -terrain_->GetDerivativeOfHeightWrt(To2D(dim), p.x(), p.y());
-        jac.coeffRef(row, idx) = -terrain_->GetDerivativeOfHeightWrt(To2D(dim), p.x()+0.04, p.y());
-        jac.coeffRef(row-1, idx) = -terrain_->GetDerivativeOfHeightWrt(To2D(dim), p.x()-0.02, p.y());
+        jac.coeffRef(row, idx) = -terrain_->GetDerivativeOfHeightWrt(To2D(dim), p.x(), p.y());
+//        jac.coeffRef(row, idx) = -terrain_->GetDerivativeOfHeightWrt(To2D(dim), p.x()+0.02, p.y());
+//        jac.coeffRef(row-1, idx) = -terrain_->GetDerivativeOfHeightWrt(To2D(dim), p.x()-0.02, p.y());
 
       }
       row++;
